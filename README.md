@@ -61,7 +61,8 @@ Approximate round trip times in milli-seconds:
 # can read a file easily and get contents
 content = utils.read_file('/path/to/any/file', as_str=False, strip_newlines=False)
 # can write files easily (creates any missing dirs in the path) 
-# content must be able to be converted to string, (if contents is a list of strings uses writelines() to mirror utils.read_file)
+# content must be able to be converted to string, 
+# (if contents is a list of strings uses writelines() to mirror utils.read_file)
 path_written = utils.write_file('/path/to/write/file', content)
 print path_written   # returns the path that was written
 ```
