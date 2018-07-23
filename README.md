@@ -24,11 +24,20 @@ When running from command line, you should include a call to `utils.logging_setu
 
 ## Quickstart Examples
 
+```python
+ret = utils.iexec('ping 8.8.8.8')  # using iexec you can run any command
 ```
->>> ret = utils.iexec('ping 8.8.8.8')  # using iexec you can run any command
->>> print ret.rc  # you can access the ExecResult to see the return code (rc)
+```python
+print ret.rc  # you can access the ExecResult to see the return code (rc)
+```
+```
 0
->>> print ret.debug_output()  # ExecResult also includes many convenience functions
+```
+
+```python
+print ret.debug_output()  # ExecResult also includes many convenience functions
+```
+```
 cmd: ping 8.8.8.8
 rc: 0
 start: 1532353723.38
@@ -48,14 +57,16 @@ Approximate round trip times in milli-seconds:
     Minimum = 72ms, Maximum = 87ms, Average = 80ms
 ```
 
-```
+```python
 # can read a file easily and get contents
->>> content = utils.read_file('/path/to/any/file', as_str=False, strip_newlines=False)
-
+content = utils.read_file('/path/to/any/file', as_str=False, strip_newlines=False)
 # can write files easily (creates any missing dirs in the path) 
 # content must be able to be converted to string, (if contents is a list of strings uses writelines() to mirror utils.read_file)
->>> utils.write_file('/path/to/write/file', content) 
-'/path/to/write/file'  # returns the path that was written
+path_written = utils.write_file('/path/to/write/file', content)
+print path_written   # returns the path that was written
+```
+```
+/path/to/write/file
 ```
 
 More examples in the [examples folder](examples).
@@ -70,12 +81,16 @@ Throughout the years I have compiled this set of utilities, most of it is writte
 
 ## Future Plans
 
-I plan to include additional tools in the future, not just a set of utils, but also powerful classes to manage common DevOps/Automation challanges.
+1. I plan to increase the number of examples to try to cover each util lib.
 
-* TaskManager - *To optimize running tasks in parallel or in a specific order*
-* JsonLoader - *To make reading and writing class structures from JSON easy*
-* RestfulAPI - *To enhance the ability to use and debug restful interface using requests*
-* And More.. - *I have a large collection of tools to release*
+2. I plan to improve documentation and add additional comments for increased flow readability
+
+3. I plan to include additional tools in the future, not just a set of utils, but also powerful classes to manage common DevOps/Automation challanges...
+
+   1. TaskManager - *To optimize running tasks in parallel or in a specific order*
+   2. JsonLoader - *To make reading and writing class structures from JSON easy*
+   3. RestfulAPI - *To enhance the ability to use and debug restful interface using requests*
+   4. And More.. - *I have a large collection of tools to release*
 
 ## License
 
