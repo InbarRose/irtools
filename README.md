@@ -58,7 +58,7 @@ Approximate round trip times in milli-seconds:
 '/path/to/write/file'  # returns the path that was written
 ```
 
-More examples in the examples folder.
+More examples in the [examples folder](examples).
 
 ## Authors / Creators / Credits
 
