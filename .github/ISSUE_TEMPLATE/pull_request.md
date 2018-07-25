@@ -1,11 +1,10 @@
 ---
 name: Pull Request
-about: Making a pull request to the project [guidelines](.github/PULL_REQUEST_TEMPLATE.md)
-
+about: Making a pull request to the project 
 ---
 
 **Thank you for making a pull request, please make sure you met the guidlines**
-If you did not meet the guidelines, please explain why. If you did, please acknowledge that.
+If you did not meet the [guidelines](.github/PULL_REQUEST_TEMPLATE.md), please explain why. If you did, please acknowledge that.
 
 **Please explain what the contents of the pull request are**
 A clear and concise description of the contents.
