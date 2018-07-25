@@ -1,6 +1,6 @@
 ---
 name: Pull Request
-about: Making a pull request to the project
+about: Making a pull request to the project [guidelines](.github/PULL_REQUEST_TEMPLATE.md)
 
 ---
 
