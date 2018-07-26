@@ -4,6 +4,10 @@
 import time
 import datetime
 
+# irtools Imports
+from irtools import *
+
+# External Import (pytz or workaround)
 try:
     import pytz
     gmt_timezone = pytz.timezone('GMT')
@@ -20,14 +24,12 @@ except ImportError:
 
         def dst(self, dt):
             return datetime.timedelta(hours=0)
+    pytz = None
     gmt_timezone = GMTTimezone()
 
     def apply_tz_func(dt, tz):
         return dt.replace(tzinfo=tz)
 
-
-# irtools Imports
-from irtools import *
 
 # logging
 log = logging.getLogger('irtools.utils.datetime')
