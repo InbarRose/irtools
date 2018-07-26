@@ -19,7 +19,7 @@ from string_utils import get_datestring
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.exec_utils')
+log = logging.getLogger('irtools.utils.exec')
 
 
 # kwargs for subprocess (used by iexec)

@@ -30,7 +30,7 @@ except ImportError:
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.datetime_utils')
+log = logging.getLogger('irtools.utils.datetime')
 
 
 def apply_timezone_to_dt(dt, timezone=gmt_timezone):

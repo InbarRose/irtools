@@ -7,7 +7,7 @@ from file_utils import check_makedir
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.log_utils')
+log = logging.getLogger('irtools.utils.log')
 
 # constant that will be changed with global call
 logging_is_setup = False

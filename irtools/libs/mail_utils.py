@@ -18,7 +18,7 @@ from env_utils import get_env
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.mail_utils')
+log = logging.getLogger('irtools.utils.mail')
 
 
 def send_email(recipients, subject, text, attachments=None, message_callback=None, **kwargs):

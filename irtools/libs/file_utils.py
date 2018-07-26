@@ -17,7 +17,7 @@ from csv_utils import DictReader, DictWriter
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.file_utils')
+log = logging.getLogger('irtools.utils.file')
 
 # check_makedir ignore
 MKDIR_IGNORE = ['file already exists', 'File exists', 'No such file or directory']

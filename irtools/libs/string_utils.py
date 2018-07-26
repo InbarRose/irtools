@@ -11,7 +11,7 @@ from sort_utils import natural_keys_floats
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.string_utils')
+log = logging.getLogger('irtools.utils.string')
 
 # normalize regex
 NORMALIZE_WHITESPACE_PATTERN = r'\s+'

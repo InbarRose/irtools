@@ -11,7 +11,7 @@ from file_utils import write_file, check_makedir
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.report_utils')
+log = logging.getLogger('irtools.utils.report')
 
 
 def json_serializer(obj, debug=False):

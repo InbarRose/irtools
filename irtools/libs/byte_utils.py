@@ -7,7 +7,7 @@ from collections import namedtuple
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.byte_utils')
+log = logging.getLogger('irtools.utils.byte')
 
 # Disk Stuff
 DiskUsage = namedtuple('DiskUsage', 'total used free')

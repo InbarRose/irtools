@@ -4,7 +4,7 @@
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.env_utils')
+log = logging.getLogger('irtools.utils.env')
 
 
 def get_ip():
