@@ -86,7 +86,7 @@ class ExecResult:
         self.__err = ''
         self.time = time_taken
         self.start = start
-        self.start_datetime = datetime.fromtimestamp(start).strftime(log_datetime_format)
+        self.start_datetime = datetime.fromtimestamp(start).strftime(_log_datetime_format)
         self.timeout = timeout
         self.cmd = cmd
         self.ordered_out = ordered_out

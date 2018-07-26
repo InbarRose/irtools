@@ -30,6 +30,8 @@ if len(current_hostname) > 16:
 else:
     host_log_name = current_hostname
 # lets create a nice log format to use
+# the logging date time format
+log_datetime_format = '%Y-%m-%d %H:%M:%S'
 LOG_FORMAT = logging.Formatter(
     '%(asctime)s {host} %(name)s %(levelname)5.5s: %(message)s'.format(host=host_log_name),
     datefmt=log_datetime_format)
