@@ -1,3 +1,4 @@
 psutil
 junit-xml>=1.8
 pytz
+requests
