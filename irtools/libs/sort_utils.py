@@ -7,7 +7,7 @@ import re
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.sort_utils')
+log = logging.getLogger('irtools.utils.sort')
 
 float_pattern = r'([+-]?(?:[0-9]+(?:[.][0-9]*)?|[.][0-9]+))'
 float_regex = re.compile(float_pattern)

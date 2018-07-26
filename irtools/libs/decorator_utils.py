@@ -10,7 +10,7 @@ import functools
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.decorator_utils')
+log = logging.getLogger('irtools.utils.decorator')
 
 
 class Memoized(object):

@@ -5,7 +5,7 @@ from irtools import *
 
 
 # logging
-log = logging.getLogger('irtools.enum_utils')
+log = logging.getLogger('irtools.utils.enum')
 
 
 def dget_tkey(dictionary, tuple_key, default=None, ignore_case=True, raise_if_missing=False):

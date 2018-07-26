@@ -7,7 +7,7 @@ from file_utils import check_makedir
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.log_utils')
+log = logging.getLogger('irtools.utils.log')
 
 # constant that will be changed with global call
 logging_is_setup = False
@@ -30,6 +30,8 @@ if len(current_hostname) > 16:
 else:
     host_log_name = current_hostname
 # lets create a nice log format to use
+# the logging date time format
+log_datetime_format = '%Y-%m-%d %H:%M:%S'
 LOG_FORMAT = logging.Formatter(
     '%(asctime)s {host} %(name)s %(levelname)5.5s: %(message)s'.format(host=host_log_name),
     datefmt=log_datetime_format)
@@ -116,7 +118,9 @@ def set_log_console_handler_to_level(log_, level=logging.WARN, **kwargs):
     :param kwargs:
     :return:
     """
+    # noinspection PyProtectedMember
     assert level in logging._levelNames
+    # noinspection PyProtectedMember
     level_name = logging._levelNames.get(level)
     console_handlers = filter(lambda h: isinstance(h, logging.StreamHandler), log_.handlers)
     if not console_handlers:
@@ -204,5 +208,5 @@ def logging_setup(**kwargs):
 __all__ = [
     'logging_setup', 'add_console_log_handler', 'add_file_log_handler',
     'get_log_func', 'get_log_level_name', 'test_logging',
-    'set_log_console_handler_to_level'
+    'set_log_console_handler_to_level', 'log_datetime_format'
 ]

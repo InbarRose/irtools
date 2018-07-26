@@ -12,14 +12,14 @@ from datetime import datetime
 
 # Lib Imports
 from file_utils import write_file, read_file, get_tmp_dir
-from log_utils import get_log_func
+from log_utils import get_log_func, log_datetime_format
 from string_utils import get_datestring
 
 # irtools Imports
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.exec_utils')
+log = logging.getLogger('irtools.utils.exec')
 
 
 # kwargs for subprocess (used by iexec)

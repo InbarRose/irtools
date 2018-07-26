@@ -7,7 +7,7 @@ from exec_utils import iexec
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.linux_utils')
+log = logging.getLogger('irtools.utils.linux')
 
 
 def rm_rf(*paths, **kwargs):

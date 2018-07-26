@@ -11,7 +11,7 @@ from exec_utils import iexec
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.service_utils')
+log = logging.getLogger('irtools.utils.service')
 
 # ignored errors for services
 IGNORED_SERVICE_ERRORS = [

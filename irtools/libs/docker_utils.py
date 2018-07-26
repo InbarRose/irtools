@@ -8,7 +8,7 @@ from file_utils import check_makedir
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.docker_utils')
+log = logging.getLogger('irtools.utils.docker')
 docker_trace_log = log_dir + '/docker_trace.log'
 
 

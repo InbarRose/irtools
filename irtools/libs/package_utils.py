@@ -11,7 +11,7 @@ from exec_utils import iexec
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.package_utils')
+log = logging.getLogger('irtools.utils.package')
 
 # string patterns for apt / packages
 locked_apt_get_file_msg = '/var/lib/dpkg/lock'

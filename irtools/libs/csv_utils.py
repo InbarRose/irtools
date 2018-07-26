@@ -9,7 +9,7 @@ from itertools import izip
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.csv_utils')
+log = logging.getLogger('irtools.utils.csv')
 
 if not running_on_windows:
     csv.field_size_limit(sys.maxsize)  # to read large queries

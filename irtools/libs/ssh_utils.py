@@ -8,7 +8,7 @@ from file_utils import check_makedir, write_to_tmp_file
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.ssh_utils')
+log = logging.getLogger('irtools.utils.ssh')
 
 
 def sftp_download(hostname, username, password, remote_path, local_path, **kwargs):

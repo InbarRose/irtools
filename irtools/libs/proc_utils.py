@@ -14,7 +14,7 @@ from csv_utils import DictReader
 from irtools import *
 
 # logging
-log = logging.getLogger('irtools.proc_utils')
+log = logging.getLogger('irtools.utils.proc')
 
 # process detailed information
 ProcDetailedInfo = namedtuple('ProcDetailedInfo', 'pid name ppid status cmdline')
