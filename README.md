@@ -9,10 +9,12 @@ Compiled over many years of use, gathered here and organized.
 
 ## Installing with pip
 
-To get the most stable version (**recommended**) 
+> To get the most stable version (**recommended**) 
+
 `pip install git+git://github.com/InbarRose/irtools@master#egg=irtools`
 
-To get the development version
+> To get the development version
+
 `pip install git+git://github.com/InbarRose/irtools@development#egg=irtools`
 
 ## Usage
