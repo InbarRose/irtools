@@ -118,7 +118,9 @@ def set_log_console_handler_to_level(log_, level=logging.WARN, **kwargs):
     :param kwargs:
     :return:
     """
+    # noinspection PyProtectedMember
     assert level in logging._levelNames
+    # noinspection PyProtectedMember
     level_name = logging._levelNames.get(level)
     console_handlers = filter(lambda h: isinstance(h, logging.StreamHandler), log_.handlers)
     if not console_handlers:
@@ -206,5 +208,5 @@ def logging_setup(**kwargs):
 __all__ = [
     'logging_setup', 'add_console_log_handler', 'add_file_log_handler',
     'get_log_func', 'get_log_level_name', 'test_logging',
-    'set_log_console_handler_to_level'
+    'set_log_console_handler_to_level', 'log_datetime_format'
 ]
