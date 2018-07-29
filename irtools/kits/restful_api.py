@@ -28,7 +28,18 @@ class RestfulAPI(object):
     # the request timeout helps prevent hanging
     request_timeout = 120
     # these strings/keys are used to help parse kwargs related to logging transactions out of regular kwargs
-    _log_keys = ['_log_transact_id', '_log_transact_name', '_log_save_request', '_log_save_response']
+    _log_keys = [
+        '_log_transact_id',
+        '_log_transact_name',
+        '_log_save_request',
+        '_log_save_response',
+        '_log_dir_request',
+        '_log_dir_response',
+    ]
+    # default log paths
+    _cls_log_dir = log_dir
+    _cls_request_dir = log_dir + '/request'
+    _cls_response_dir = log_dir + '/response'
     # errors that should be ignored when converting JSON data
     _ignored_json_convert_error_messages = [
         'Extra data',
@@ -52,20 +63,42 @@ class RestfulAPI(object):
         """directory to store response data and logs"""
         return self.log_rest_dir + '/response'
 
-    def _get_transaction_id_parts(self):
+    def __add_default_log_dirs_to_kwargs(self, kwargs):
+        kwargs.setdefault('_log_dir_request', self.request_data_dir)
+        kwargs.setdefault('_log_dir_response', self.response_data_dir)
+
+    @classmethod
+    def _get_log_request_file_path(cls, method, directory, transact_id):
+        """creates the final file path for request logs"""
+        return cls._format_log_file_path.format(directory=directory, method=method, id=transact_id)
+
+    @classmethod
+    def _get_log_response_file_path(cls, method, directory, transact_id):
+        """creates the final file path for response logs"""
+        return cls._format_log_file_path.format(directory=directory, method=method, id=transact_id)
+
+    @classmethod
+    def _get_transaction_id_parts(cls):
         """gets the parts to include in the transaction id (log file name)"""
-        return [self.transaction_counter.next(), self.base_url]
+        return [cls.transaction_counter.next()]
+
+    @classmethod
+    def _make_transaction_id(cls, *args):
+        """construct the transaction id using the default parts and any args"""
+        return '.'.join(map(str, filter(None, cls._get_transaction_id_parts() + list(args))))
 
     def make_transaction_id(self, *args):
-        """construct the transaction id using the default parts and any args"""
-        return '.'.join(map(str, filter(None, self._get_transaction_id_parts() + list(args))))
+        arg_list = [self.base_url] + list(args)
+        return self._make_transaction_id(*arg_list)
 
-    def _extract_log_kwargs(self, **kwargs):
+    @classmethod
+    def _extract_log_kwargs(cls, **kwargs):
         """extracts the log kwargs from request kwargs for use in logging"""
-        log_kwargs = {lk[5:]: kwargs.pop(lk) for lk in self._log_keys if lk in kwargs.keys()}
+        log_kwargs = {lk[5:]: kwargs.pop(lk) for lk in cls._log_keys if lk in kwargs.keys()}
         return log_kwargs, kwargs
 
-    def _log_transaction(self, response, **kwargs):
+    @classmethod
+    def _log_transaction(cls, response, **kwargs):
         """
         logs the request transaction, both request and response with optional kwargs
         :param response:
@@ -74,27 +107,31 @@ class RestfulAPI(object):
         """
         transact_name = kwargs.pop('transact_name', None)
         if transact_name:
-            transact_id = '{}.{}'.format(self.transaction_counter.next(), transact_name)
+            transact_id = '{}.{}'.format(cls.transaction_counter.next(), transact_name)
         else:
-            transact_id = kwargs.pop('transact_id', None) or self.transaction_counter.next()
+            transact_id = kwargs.pop('transact_id', None) or cls.transaction_counter.next()
         save_request = kwargs.pop('save_request', True)
         save_response = kwargs.pop('save_response', True)
+        dir_request = kwargs.pop('dir_request', cls._cls_request_dir)
+        dir_response = kwargs.pop('dir_response', cls._cls_response_dir)
         if save_request:
             try:
-                self._log_request(response, transact_id)
+                request_file_path = cls._get_log_request_file_path(response.request.method, dir_request, transact_id)
+                cls._log_request(response, request_file_path)
             except Exception as exc:
                 log.error('Exception logging rest transaction request: id={} exc={} trace...'.format(transact_id, exc),
                           exc_info=True)
         if save_response:
             try:
-                self._log_response(response, transact_id)
+                response_file_path = cls._get_log_response_file_path(response.request.method, dir_response, transact_id)
+                cls._log_response(response, response_file_path)
             except Exception as exc:
                 log.error('Exception logging rest transaction response: id={} exc={} trace...'.format(transact_id, exc),
                           exc_info=True)
 
-    def _log_request(self, response, transact_id):
+    @classmethod
+    def _log_request(cls, response, request_file_path):
         """log the request side of a transaction"""
-        request_file_path = self._get_log_request_file_path(response.request.method, transact_id)
         if response.request.body:
             content = response.request.body
         else:
@@ -103,34 +140,23 @@ class RestfulAPI(object):
         log.trace('log-request: method={} url={} path={} data={}'.format(
             response.request.method, response.request.url, data_file, bool(response.request.body)))
 
-    def _log_response(self, response, transact_id):
+    @classmethod
+    def _log_response(cls, response, response_file_path):
         """log the response side of a transaction"""
-        response_file_path = self._get_log_response_file_path(response.request.method, transact_id)
-        content = self._get_content_from_json(response)
+        content = cls._get_content_from_json(response)
         if content is not None:
             data_file = utils.write_file(response_file_path, json.dumps(content, indent=4))
             log.trace('log-response: status={} data={}'.format(response.status_code, data_file))
         else:
             log.trace('log-response: status={} data=None'.format(response.status_code))
 
-    def _get_log_request_file_path(self, method, transact_id):
-        """creates the final file path for request logs"""
-        request_file_path = self._format_log_file_path.format(
-            directory=self.request_data_dir, method=method, id=transact_id)
-        return request_file_path
-
-    def _get_log_response_file_path(self, method, transact_id):
-        """creates the final file path for response logs"""
-        response_file_path = self._format_log_file_path.format(
-            directory=self.response_data_dir, method=method, id=transact_id)
-        return response_file_path
-
-    def _get_content_from_json(self, response):
+    @classmethod
+    def _get_content_from_json(cls, response):
         """attempts to extract content from a json in the response from server"""
         try:
             content = response.json()
         except ValueError as vexc:
-            if not any([ignored_msg in str(vexc) for ignored_msg in self._ignored_json_convert_error_messages]):
+            if not any([ignored_msg in str(vexc) for ignored_msg in cls._ignored_json_convert_error_messages]):
                 raise
             elif response.content:
                 content = response.content
@@ -138,13 +164,14 @@ class RestfulAPI(object):
                 content = None
         return content
 
-    def request_get(self, url, **kwargs):
+    @classmethod
+    def _request_get(cls, url, **kwargs):
         """sends a GET command using requests package"""
         ignore_request_timeout = kwargs.pop('ignore_request_timeout', False)
         ignore_connection_aborted = kwargs.pop('ignore_connection_aborted', False)
         log_action = kwargs.pop('log_action', True)
-        kwargs.setdefault('timeout', self.request_timeout)
-        log_kwargs, kwargs = self._extract_log_kwargs(**kwargs)
+        kwargs.setdefault('timeout', cls.request_timeout)
+        log_kwargs, kwargs = cls._extract_log_kwargs(**kwargs)
         if log_action:
             log.debug('request.get: url={}'.format(url))
         try:
@@ -163,14 +190,20 @@ class RestfulAPI(object):
             log.error('requests get exception: exc={} url={}'.format(exc, url))
             raise
         else:
-            self._log_transaction(r, **log_kwargs)
+            cls._log_transaction(r, **log_kwargs)
             return r
 
-    def request_post(self, url, **kwargs):
+    def request_get(self, url, **kwargs):
+        """sends a GET command using requests package"""
+        self.__add_default_log_dirs_to_kwargs(kwargs)
+        return self._request_get(url, **kwargs)
+
+    @classmethod
+    def _request_post(cls, url, **kwargs):
         """sends a POST command using requests package"""
         log_action = kwargs.pop('log_action', True)
-        kwargs.setdefault('timeout', self.request_timeout)
-        log_kwargs, kwargs = self._extract_log_kwargs(**kwargs)
+        kwargs.setdefault('timeout', cls.request_timeout)
+        log_kwargs, kwargs = cls._extract_log_kwargs(**kwargs)
         if log_action:
             log.debug('request.post: url={}'.format(url))
         try:
@@ -179,14 +212,20 @@ class RestfulAPI(object):
             log.error('requests post exception: exc={} url={}'.format(exc, url))
             raise
         else:
-            self._log_transaction(r, **log_kwargs)
+            cls._log_transaction(r, **log_kwargs)
         return r
 
-    def request_put(self, url, **kwargs):
+    def request_post(self, url, **kwargs):
+        """sends a POST command using requests package"""
+        self.__add_default_log_dirs_to_kwargs(kwargs)
+        return self._request_post(url, **kwargs)
+
+    @classmethod
+    def _request_put(cls, url, **kwargs):
         """sends a PUT command using requests package"""
         log_action = kwargs.pop('log_action', True)
-        kwargs.setdefault('timeout', self.request_timeout)
-        log_kwargs, kwargs = self._extract_log_kwargs(**kwargs)
+        kwargs.setdefault('timeout', cls.request_timeout)
+        log_kwargs, kwargs = cls._extract_log_kwargs(**kwargs)
         if log_action:
             log.debug('request.put: url={}'.format(url))
         try:
@@ -195,14 +234,20 @@ class RestfulAPI(object):
             log.error('requests put exception: exc={} url={}'.format(exc, url))
             raise
         else:
-            self._log_transaction(r, **log_kwargs)
+            cls._log_transaction(r, **log_kwargs)
         return r
 
-    def request_delete(self, url, **kwargs):
+    def request_put(self, url, **kwargs):
+        """sends a PUT command using requests package"""
+        self.__add_default_log_dirs_to_kwargs(kwargs)
+        return self._request_put(url, **kwargs)
+
+    @classmethod
+    def _request_delete(cls, url, **kwargs):
         """sends a DELETE command using requests package"""
         log_action = kwargs.pop('log_action', True)
-        kwargs.setdefault('timeout', self.request_timeout)
-        log_kwargs, kwargs = self._extract_log_kwargs(**kwargs)
+        kwargs.setdefault('timeout', cls.request_timeout)
+        log_kwargs, kwargs = cls._extract_log_kwargs(**kwargs)
         if log_action:
             log.debug('request.delete: url={}'.format(url))
         try:
@@ -211,5 +256,10 @@ class RestfulAPI(object):
             log.error('requests delete exception: exc={} url={}'.format(exc, url))
             raise
         else:
-            self._log_transaction(r, **log_kwargs)
+            cls._log_transaction(r, **log_kwargs)
         return r
+
+    def request_delete(self, url, **kwargs):
+        """sends a DELETE command using requests package"""
+        self.__add_default_log_dirs_to_kwargs(kwargs)
+        return self._request_delete(url, **kwargs)
