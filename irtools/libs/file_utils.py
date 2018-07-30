@@ -8,6 +8,7 @@ import difflib
 import fnmatch
 import tempfile
 import zipfile
+import json
 
 # Lib Imports
 from byte_utils import check_file_size
@@ -347,29 +348,35 @@ def write_file(file_name, contents=None, mode='w', rotate=False, **kwargs):
 
 def read_file(file_name, mode='r', raise_on_error=True, as_str=False, strip_newlines=False):
     """
-    Read a files lines: f.readlines()
-    :param file_name:
-    :param mode:
-    :param raise_on_error:
-    :param as_str: return the contents as a string: ''.join(lines)
+    Read a file: by default read the lines f.readlines() or f.read() if as_str=True
+    :param file_name: path of the file
+    :param mode: mode to read the file (r)
+    :param raise_on_error: raise exception on read error
+    :param as_str: return the contents as a string
     :param strip_newlines: return the contents as a list with no newlines: [l.strip('\n') for l in lines]
-    :return: a list of lines or concatenated string of all lines
+    :return: a list of lines or string
     """
     try:
         with open(file_name, mode=mode) as f:
-            lines = f.readlines()
+            if as_str:
+                content = f.read()
+            else:
+                content = f.readlines()
     except Exception as exc:
-        if not raise_on_error:
-            log.warn('Exception reading file, ignoring, and return empty list: exc={}'.format(exc))
-            lines = []
-        else:
+        if raise_on_error:
             raise
-
-    if strip_newlines:
-        lines = [l.strip('\n') for l in lines]
-    if as_str:
-        return ''.join(lines)
-    return lines
+        log.warn('Exception reading file, ignoring, and return empty: exc={}'.format(exc))
+        if as_str:
+            return ''
+        else:
+            return []
+    else:
+        if as_str:
+            return content
+        else:
+            if strip_newlines:
+                content = [l.strip('\n') for l in content]
+            return content
 
 
 def write_csv(file_name, contents, headers=None, **kwargs):
@@ -416,6 +423,49 @@ def read_csv(file_name, return_headers=False):
     if return_headers:
         return rows, reader.fieldnames
     return rows
+
+
+def read_json(file_name, json_kwargs, **kwargs):
+    """
+    reads a json file using read_file and creates a python object using json module
+    :param file_name: path of the file
+    :param json_kwargs:
+    :param kwargs:
+    :return: python object (dict)
+    """
+    log.trace('reading json file: path={}'.format(file_name))
+    raise_on_json_error = kwargs.pop('raise_on_json_error', True)
+    kwargs['as_str'] = True
+    contents = read_file(file_name, **kwargs)
+    try:
+        python_object = json.loads(contents, **json_kwargs)
+    except Exception as exc:
+        if raise_on_json_error:
+            raise
+        log.error('exception loading json from file: exc={}'.format(exc))
+    else:
+        return python_object
+
+
+def write_json(file_name, python_object, json_kwargs, **kwargs):
+    """
+    writes a python object as json into a json file using json module and write_file method
+    :param file_name: path of the file
+    :param python_object: python object (dict)
+    :param json_kwargs:
+    :param kwargs:
+    :return: path to file
+    """
+    log.trace('writing json file: path={}'.format(file_name))
+    raise_on_json_error = kwargs.pop('raise_on_json_error', True)
+    try:
+        contents = json.dumps(python_object, **json_kwargs)
+    except Exception as exc:
+        if raise_on_json_error:
+            raise
+        log.error('exception dumping json to file: exc={}'.format(exc))
+    else:
+        return write_file(file_name, contents, **kwargs)
 
 
 def file_diff(file_a, file_b, output=None, **kwargs):
