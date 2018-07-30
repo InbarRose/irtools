@@ -425,7 +425,7 @@ def read_csv(file_name, return_headers=False):
     return rows
 
 
-def read_json(file_name, json_kwargs, **kwargs):
+def read_json(file_name, json_kwargs=None, **kwargs):
     """
     reads a json file using read_file and creates a python object using json module
     :param file_name: path of the file
@@ -435,6 +435,7 @@ def read_json(file_name, json_kwargs, **kwargs):
     """
     log.trace('reading json file: path={}'.format(file_name))
     raise_on_json_error = kwargs.pop('raise_on_json_error', True)
+    json_kwargs = json_kwargs or {}
     kwargs['as_str'] = True
     contents = read_file(file_name, **kwargs)
     try:
@@ -447,7 +448,7 @@ def read_json(file_name, json_kwargs, **kwargs):
         return python_object
 
 
-def write_json(file_name, python_object, json_kwargs, **kwargs):
+def write_json(file_name, python_object, json_kwargs=None, **kwargs):
     """
     writes a python object as json into a json file using json module and write_file method
     :param file_name: path of the file
@@ -458,6 +459,7 @@ def write_json(file_name, python_object, json_kwargs, **kwargs):
     """
     log.trace('writing json file: path={}'.format(file_name))
     raise_on_json_error = kwargs.pop('raise_on_json_error', True)
+    json_kwargs = json_kwargs or {}
     try:
         contents = json.dumps(python_object, **json_kwargs)
     except Exception as exc:
