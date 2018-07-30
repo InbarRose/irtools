@@ -633,7 +633,7 @@ def replace_content_in_file(filepath, replacements, raise_on_fail=True, **kwargs
 
 __all__ = [
     'check_makedir', 'find_single_path', 'find_files_recursively',
-    'read_file', 'write_file', 'read_csv', 'write_csv',
+    'read_file', 'write_file', 'read_csv', 'write_csv', 'read_json', 'write_json',
     'bulk_rename', 'file_diff', 'file_rotation', 'format_file', 'replace_content_in_file',
     'get_tmp_dir', 'write_to_tmp_file',
     # simple wrappers of copy/delete
