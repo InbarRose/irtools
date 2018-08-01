@@ -38,7 +38,7 @@ class RestfulAPI(object):
         '_log_dir_response',
     ]
     # default log paths
-    _cls_log_dir = log_dir  # you should override this in your inheritors
+    _cls_log_dir = ir_log_dir  # you should override this in your inheritors
     _cls_request_dir = _cls_log_dir + '/request'
     _cls_response_dir = _cls_log_dir + '/response'
     # errors that should be ignored when converting JSON data

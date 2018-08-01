@@ -16,6 +16,14 @@ class LoadJsonDataError(JsonStructureException):
     pass
 
 
+class PropertyGetError(JsonStructureException):
+    pass
+
+
+class PropertyPathError(JsonStructureException):
+    pass
+
+
 class MissingKeyError(LoadJsonDataError):
     pass
 
@@ -55,6 +63,19 @@ class JsonStructure(object):
     # and all default values will be added to the structure unless real values are provided instead
     _js_default_data = {
         'root': {}
+    }
+
+    # to add easily accessible properties to your object
+    # using the properties will let you define a custom key that will be used to access values in your object
+    # for example:
+    # property: {'id': ['object-id']}
+    #   means accessing js.id or js['id'] you will get the 'object-id' from data.
+    # property: {'embedded': ['deeply', 'embedded', 'value']}
+    #   means accessing js.embedded or js['embedded'] you will get the 'value' from data['deeply']['embedded'].
+    # using properties will let you access keys in child members as well, recursively calling .get on the inner objects
+    # a property is a dictionary mapping the property key to a list which is the path of .get to get to the value
+    _js_properties = {
+
     }
 
     def __init__(self, json_data=None):
@@ -219,7 +240,26 @@ class JsonStructure(object):
 
     def _hook_get_json_key(self, key):
         """a function to provide easy extendability to getting a json key"""
+        if key in self._js_properties:
+            return self._hook_get_property(key)
         return self.__json_data[key]
+
+    def _hook_get_property(self, key, default=None):
+        """a function to provide easy extendability to getting a property"""
+        property_path = self._js_properties[key]
+        if not isinstance(property_path, list):
+            raise PropertyPathError(key, property_path)
+        try:
+            value = reduce(lambda obj, k: obj.get(k), property_path, self)
+        except Exception as exc:
+            if isinstance(exc, AttributeError):
+                if exc.message.endswith("instance has no attribute 'get'"):
+                    raise PropertyGetError(key, exc.message.split()[0])
+            elif isinstance(exc, KeyError):
+                return default
+            raise
+        else:
+            return value
 
     def export_to_json_string(self, **kwargs):
         """
@@ -319,15 +359,28 @@ class JsonStructure(object):
         """get a list of the keys that are "real" fields of this object's underlying json"""
         return sorted(self.__json_data.keys())
 
+    def get_properties(self):
+        """get a list of the keys that are "property" fields of this object"""
+        return sorted(self._js_properties.keys())
+
     def __dir__(self):
         object_directory = dir(self.__class__)
         object_directory.extend(self.get_fields())
+        object_directory.extend(self.get_properties())
         return object_directory
 
     def __getitem__(self, item):
+        """provides easy access to this object by allowing js[item] access to data members or properties"""
+        return self._hook_get_json_key(item)
+
+    def __getattr__(self, item):
+        """provides easy access to this object by allowing js.item access to data members or properties"""
+        # note, that we do not provide the opposite action such as we do with __getitem__ and __setitem__
+        # mostly because properties make this a very difficult situation - maybe in the future
         return self._hook_get_json_key(item)
 
     def __setitem__(self, key, value):
+        """provides easy access to this object by allowing js[item] = value setting to data members or properties"""
         self._hook_set_json_key(key, value)
 
     def __nonzero__(self):
