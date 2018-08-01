@@ -7,25 +7,25 @@ import signal
 
 # Library Imports
 from __init__ import *
-from libs.csv_utils import *
-from libs.decorator_utils import *
-from libs.mail_utils import *
-from libs.byte_utils import *
-from libs.file_utils import *
-from libs.exec_utils import *
-from libs.log_utils import *
-from libs.package_utils import *
-from libs.proc_utils import *
-from libs.service_utils import *
-from libs.string_utils import *
-from libs.ssh_utils import *
-from libs.enum_utils import *
-from libs.report_utils import *
-from libs.env_utils import *
-from libs.sort_utils import *
-from libs.docker_utils import *
-from libs.datetime_utils import *
-from libs.linux_utils import *
+from _libs.csv_utils import *
+from _libs.decorator_utils import *
+from _libs.mail_utils import *
+from _libs.byte_utils import *
+from _libs.file_utils import *
+from _libs.exec_utils import *
+from _libs.log_utils import *
+from _libs.package_utils import *
+from _libs.proc_utils import *
+from _libs.service_utils import *
+from _libs.string_utils import *
+from _libs.ssh_utils import *
+from _libs.enum_utils import *
+from _libs.report_utils import *
+from _libs.env_utils import *
+from _libs.sort_utils import *
+from _libs.docker_utils import *
+from _libs.datetime_utils import *
+from _libs.linux_utils import *
 
 # logging
 log = logging.getLogger('irtools.utils')
@@ -238,7 +238,7 @@ def parse_cmdline_args(fargs, fkwargs, args):
 def main(args):
     parser = OptionParser()
     parser.add_option('--log-level', '--ll', dest='log_level', help='Log Level (0=info, 1=debug, 2=trace)')
-    parser.add_option('--log-file', '--lf', dest='log_file', help='Log file', default=log_dir + '/utils.log')
+    parser.add_option('--log-file', '--lf', dest='log_file', help='Log file', default=ir_log_dir + '/utils.log')
     parser.add_option('-a', '--arg', dest='fargs', action='append', default=[])
     parser.add_option('-k', '--kwarg', dest='fkwargs', action='append', default=[])
     options, args = parser.parse_args(args)

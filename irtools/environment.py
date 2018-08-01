@@ -36,12 +36,12 @@ logging.addLevelName(_TRACE_LOG_LEVEL, 'TRACE')
 
 
 #  monkey patch to add "trace" level to logs so that log.trace() works.
-def trace(self, message, *args, **kws):
+def _trace(self, message, *args, **kws):
     if self.isEnabledFor(_TRACE_LOG_LEVEL):
         self._log(_TRACE_LOG_LEVEL, message, args, **kws)  # Yes, logger takes its '*args' as 'args'.
 
 
-logging.Logger.trace = trace  # add the new function to the logger class
+logging.Logger.trace = _trace  # add the new function to the logger class
 # ====================================================== LOGGING! ======================================================
 
 # common directories
@@ -49,5 +49,5 @@ _irtools_dir = os.path.dirname(os.path.abspath(__file__))
 init_working_directory = os.getcwd()  # the directory that the user was in when this code was initialized
 
 # default artifact and log dirs
-artifact_dir = os.path.join(init_working_directory, 'artifact')  # to store files related to tools used
-log_dir = os.path.join(init_working_directory, 'log')  # to store logs of tool usage
+ir_artifact_dir = os.path.join(init_working_directory, 'artifact')  # to store files related to tools used
+ir_log_dir = os.path.join(init_working_directory, 'log')  # to store logs of tool usage

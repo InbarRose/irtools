@@ -990,7 +990,7 @@ def testsub():
 def main(args):
     parser = OptionParser()
     parser.add_option('--log-level', '--ll', dest='log_level', help='Log Level (0=info, 1=debug, 2=trace)')
-    parser.add_option('--log-file', '--lf', dest='log_file', help='Log file', default=log_dir + '/deploy.log')
+    parser.add_option('--log-file', '--lf', dest='log_file', help='Log file', default=ir_log_dir + '/deploy.log')
     options, args = parser.parse_args(args)
 
     utils.logging_setup(log_level=options.log_level, log_file=options.log_file)
