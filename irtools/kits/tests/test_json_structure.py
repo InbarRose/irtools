@@ -135,3 +135,36 @@ class TestJsonStructure(unittest.TestCase):
         )
 
         self.assertTrue(True)
+
+    def test_load_convert(self):
+        class JSInner(JsonStructure):
+            _js_required_structure = {
+                'root': {
+                    'a': int,
+                }
+            }
+            _js_default_data = {
+                'root': {
+                    'b': 'hello'
+                }
+            }
+
+        class JSOuter(JsonStructure):
+            _js_required_structure = {
+                'root': {
+                    'js': JSInner,
+                    'meta': {'label': str},
+                    'js_list': [JSInner],
+                }
+            }
+
+        o = JSOuter(
+            json_data={
+                'js': {'a': 1},
+                'meta': {'label': '123'},
+                'js_list': [{'a': 2}, {'a': 3}],
+            }
+        )
+        self.assertDictEqual(o.js.export_to_json_data(), {'a': 1, 'b': 'hello'})
+        self.assertTrue(isinstance(o.js, JSInner))
+        self.assertTrue(all(isinstance(js, JSInner) for js in o.js_list))

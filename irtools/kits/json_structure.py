@@ -42,9 +42,6 @@ class JsonStructure(object):
     This class can and should be embedded any arbitrary times into itself
     meaning that sub objects that require special functions could be their own JsonStructure, although not required
     """
-    # In JSON all keys are strings, we should enforce this
-    force_all_keys_are_strings = True
-
     # to build a required structure,
     # build a mock of the json object structure, will check key values against types
     # starts from root, to specify that the root of a JsonStructure should always be a dictionary
@@ -77,6 +74,14 @@ class JsonStructure(object):
     _js_properties = {
 
     }
+
+    # == class flags ==
+    # load_convert - for when a subclass of JsonStructure is specified in the required structure
+    # if the loaded item is not of the type (which makes sense when reading from raw json) then we try to convert
+    # this only happens when the item is a dictionary object.
+    # we attempt to convert using required_class(json_data=item)
+    # we expect that the required_class will handle its own load validation
+    _flag_load_convert = True
 
     def __init__(self, json_data=None):
         # members
@@ -182,6 +187,13 @@ class JsonStructure(object):
             # make sure required key exists
             if inner_key not in json_data_at_key:
                 raise MissingKeyError(inner_key, path)
+            #  see if we can convert the data to the required type if it isn't already
+            if self.__check_load_convert(required_type_object, json_data_at_key[inner_key]):
+                json_data_at_key[inner_key] = self.__load_convert(
+                    convert_data=json_data_at_key[inner_key],
+                    convert_class=required_type_object,
+                    path=in_path,
+                )
             # make sure required type matches or is instance of required class
             if not self.__check_required_type_match(json_data_at_key[inner_key], required_type_object):
                 raise WrongTypeError(required_type_object, in_path)
@@ -194,12 +206,48 @@ class JsonStructure(object):
                     required_at_key[inner_key],
                     path=in_path)
             elif isinstance(required_type_object, list) and len(required_type_object):
+                # check if we can convert the list of json_data into the required type
+                # this will only happen if there is only 1 type specified in the list
+                # (ie: we requires a list to be of json_structure items)
+                # and we check that we can load/convert all the items
+                if len(required_type_object) == 1 and all(
+                        self.__check_load_convert(required_type_object[0], d) for d in json_data_at_key[inner_key]):
+                    # we are going to convert the whole list before validating
+                    json_data_at_key[inner_key] = [self.__load_convert(
+                        convert_data=d,
+                        convert_class=required_type_object[0],
+                        path=in_path,
+                    ) for d in json_data_at_key[inner_key]]
+                # recurse down because this list has items in it
                 self.__check_required_list(
                     json_data_at_key[inner_key],
                     required_at_key[inner_key],
                     path=in_path)
         # returns the json_data
         return json_data_at_key
+
+    def __load_convert(self, convert_data, convert_class, path):
+        """converts data during loading to required class type"""
+        try:
+            return convert_class(json_data=convert_data)
+        except Exception as exc:
+            log.error('Exception trying to convert data on load: exc={} convert_class={} path={}'.format(
+                exc, convert_class, path))
+            return convert_data
+
+    def __check_load_convert(self, required_type_object, candidate_data):
+        """checks if we can convert the data to required class type during loading"""
+        if not self._flag_load_convert:
+            # if the flag is off, we should not perform conversions
+            return False
+        if not isinstance(candidate_data, dict):
+            # if the data is not a dictionary, we do not need to convert anything
+            return False
+        if isinstance(required_type_object, (types.ClassType, type)) \
+                and not issubclass(required_type_object, JsonStructure):
+            # if the required type is not a subclass of JsonStructure then we will not convert it
+            return False
+        return True
 
     def __check_required_list(self, json_data_list, required_list, path=''):
         """
