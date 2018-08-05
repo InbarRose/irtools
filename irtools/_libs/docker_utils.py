@@ -55,11 +55,10 @@ def remove_docker_image(image_id, force=False, **kwargs):
     return iexec(cmd, **kwargs)
 
 
-def get_container_id_from_composition_service(self, composition_file, service_name, **kwargs):
+def get_container_id_from_composition_service(composition_file, service_name, **kwargs):
     log.trace('getting container id from composition service: composition={} service={}'.format(
         composition_file, service_name
     ))
-    kwargs.setdefault('cwd', self.compose_dir)
 
     cmd = 'docker-compose -f {composition_file} ps -q {service_name}'.format(
         composition_file=composition_file, service_name=service_name)
