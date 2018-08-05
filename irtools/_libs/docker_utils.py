@@ -55,6 +55,33 @@ def remove_docker_image(image_id, force=False, **kwargs):
     return iexec(cmd, **kwargs)
 
 
+def get_container_id_from_composition_service(self, composition_file, service_name, **kwargs):
+    log.trace('getting container id from composition service: composition={} service={}'.format(
+        composition_file, service_name
+    ))
+    kwargs.setdefault('cwd', self.compose_dir)
+
+    cmd = 'docker-compose -f {composition_file} ps -q {service_name}'.format(
+        composition_file=composition_file, service_name=service_name)
+    ret = iexec(cmd, **kwargs)
+
+    container_id = ret.out_string.strip()
+    # todo: better detection of container id
+    if not container_id:
+        raise RuntimeError('Could not fetch container_id for composition service: composition={} service={}'.format(
+            composition_file, service_name
+        ))
+
+    log.trace('found container id for composition service: container_id={} composition={} service={}'.format(
+        container_id, composition_file, service_name))
+    return container_id
+
+
+def docker_compose_exec(composition_file, service_name, cmd, **kwargs):
+    container_id = get_container_id_from_composition_service(composition_file, service_name, **kwargs)
+    return docker_exec(container_id, cmd, **kwargs)
+
+
 def docker_exec(container_id, cmd, **kwargs):
     log.debug('performing docker exec: id={} cmd={}'.format(container_id, cmd))
     return iexec('docker exec {id} {cmd}'.format(id=container_id, cmd=cmd), **kwargs)
@@ -63,5 +90,6 @@ def docker_exec(container_id, cmd, **kwargs):
 __all__ = [
     'copy_from_docker', 'copy_to_docker',
     'remove_docker_container', 'remove_docker_image',
-    'docker_exec',
+    'get_container_id_from_composition_service',
+    'docker_exec', 'docker_compose_exec',
 ]
