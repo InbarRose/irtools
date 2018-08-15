@@ -1,2 +1,6 @@
-
+build
+dist
 .idea/*
+.pytest_cache/
+irtools.egg-info
+irtools/kits/tests/__pycache__
