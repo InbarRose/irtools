@@ -2,6 +2,12 @@
 
 A collection of useful tools for Automation, Devops, or anything really
 
+## News:
+
+> Now hosted on pypi !
+
+https://pypi.org/project/py-irtools/
+
 ## What is it?
 
 A set of tools that I find myself using often.
@@ -11,7 +17,7 @@ Compiled over many years of use, gathered here and organized.
 
 > To get the most stable version (**recommended**) 
 
-`pip install git+git://github.com/InbarRose/irtools@master#egg=irtools`
+`pip install py-irtools`
 
 > To get the development version
 
