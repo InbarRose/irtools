@@ -47,16 +47,16 @@ Throughout the years I have compiled this set of utilities, most of it is writte
 
 ## Future Plans
 
-1. I plan to increase the number of examples to try to cover each util lib.
+1. Add examples to try to cover each util lib and kit. (Assistance is welcomed)
 
-2. I plan to improve documentation and add additional comments for increased flow readability
+2. Improve documentation and add additional comments for increased flow readability (Assistance is welcomed)
 
 3. I plan to include additional tools in the future, not just a set of utils, but also powerful classes to manage common DevOps/Automation challanges...
 
-   1. TaskManager - *To optimize running tasks in parallel or in a specific order*
-   2. JsonLoader - *To make reading and writing class structures from JSON easy*
-   3. RestfulAPI - *To enhance the ability to use and debug restful interface using requests*
-   4. And More.. - *I have a large collection of tools to release*
+   1. [x] ~~TaskManager~~ - *To optimize running tasks in parallel or in a specific order*
+   2. [x] ~~JsonLoader~~ - *To make reading and writing class structures from JSON easy*
+   3. [x] ~~RestfulAPI~~ - *To enhance the ability to use and debug restful interface using requests*
+   4. [ ] And More.. - *I have a large collection of tools to release*
 
 ## License
 
