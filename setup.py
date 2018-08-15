@@ -7,7 +7,7 @@ with open("requirements.txt", "r") as fh:
     requirements = fh.readlines()    
 
 setuptools.setup(
-    name="irtools",
+    name="py-irtools",
     version="1.0.0",
     author="Inbar Rose",
     author_email="inbar.rose1@gmail.com",
