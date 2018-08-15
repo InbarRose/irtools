@@ -41,6 +41,8 @@ Approximate round trip times in milli-seconds:
     Minimum = 72ms, Maximum = 87ms, Average = 80ms
 ```
 
+### Examples for read_file and write_file
+
 ```python
 # can read a file easily and get contents
 content = utils.read_file('/path/to/any/file', as_str=False, strip_newlines=False)
