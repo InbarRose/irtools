@@ -38,6 +38,7 @@ def send_email(recipients, subject, text, attachments=None, message_callback=Non
     # extract kwarg options
     retries = kwargs.get('retries', 3)
     server_timeout = kwargs.get('server_timeout', 600)
+    use_smtp_ssl = kwargs.pop('use_smtp_ssl', False)
 
     # credentials and server options
     send_user = kwargs.pop('send_user', None) or get_env('SMTP_USER')
@@ -111,12 +112,16 @@ def send_email(recipients, subject, text, attachments=None, message_callback=Non
     while retries > 0:
         retries -= 1
         try:
-            log.trace('send_email: connecting to SMTP server: timeout={}'.format(server_timeout))
-            server = smtplib.SMTP(smtp_host, smtp_port, timeout=server_timeout)
+            if use_smtp_ssl:
+                log.trace('send_email: connecting to SMTP_SSL server: timeout={}'.format(server_timeout))
+                server = smtplib.SMTP_SSL(smtp_host, smtp_port, timeout=server_timeout)
+            else:
+                log.trace('send_email: connecting to SMTP server: timeout={}'.format(server_timeout))
+                server = smtplib.SMTP(smtp_host, smtp_port, timeout=server_timeout)
             log.trace('send_email: sending ehlo')
-            server.ehlo()
+            server.ehlo()  # may not be needed or supported
             log.trace('send_email: starting TLS')
-            server.starttls()
+            server.starttls()  # may not be needed or supported
             log.trace('send_email: logging in')
             server.login(send_user, send_pswd)
         except Exception as exc:
