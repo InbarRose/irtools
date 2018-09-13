@@ -8,6 +8,10 @@ A collection of useful tools for Automation, Devops, or anything really
 
 https://pypi.org/project/py-irtools/
 
+> Now with a Slack Channel!
+
+https://py-irtools.slack.com
+
 ## What is it?
 
 A set of tools that I find myself using often.
