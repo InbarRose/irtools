@@ -33,15 +33,15 @@ class TestThreadPool(unittest.TestCase):
         pool.map(self.wait_delay, delays)
         log.debug('mapping to thread pool, finished')
 
-        self.assertEquals(50, pool.total_task_count)
+        self.assertEquals(50, pool._total_task_count)
 
         log.debug('waiting for thread pool completion, starting: current_count={} total={} remaining={}'.format(
-            pool.current_count, pool.total_task_count, pool.remaining_tasks))
+            pool.count_completed, pool._total_task_count, pool.count_remaining))
         pool.wait_completion()
         log.debug('waiting for thread pool completion, finished')
 
-        self.assertEquals(50, pool.current_count)
-        self.assertEquals(0, pool.remaining_tasks)
+        self.assertEquals(50, pool.count_completed)
+        self.assertEquals(0, pool.count_remaining)
 
     def test_add_wait_finished(self):
         # Instantiate a thread pool with 5 worker threads
@@ -54,13 +54,13 @@ class TestThreadPool(unittest.TestCase):
             pool.add_task(self.wait_delay, randrange(3, 7))
         log.debug('adding tasks to thread pool, finished')
 
-        self.assertEquals(50, pool.total_task_count)
+        self.assertEquals(50, pool._total_task_count)
 
         log.debug('waiting for thread pool to stop processing, starting: current_count={} total={} remaining={}'.format(
-            pool.current_count, pool.total_task_count, pool.remaining_tasks))
+            pool.count_completed, pool._total_task_count, pool.count_remaining))
         while pool.processing:
             pass
         log.debug('waiting for thread pool to stop processing, finished')
 
-        self.assertEquals(50, pool.current_count)
-        self.assertEquals(0, pool.remaining_tasks)
+        self.assertEquals(50, pool.count_completed)
+        self.assertEquals(0, pool.count_remaining)
