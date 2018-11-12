@@ -2,6 +2,7 @@
 
 # Standard Imports
 import time
+import uuid
 
 # irtools Imports
 from irtools import *
@@ -26,6 +27,7 @@ class WaitLib(object):
     def __init__(self, **kwargs):
         # identification arguments
         self.identification = kwargs.pop('identification', '')
+        self._uuid = kwargs.pop('uuid', None) or uuid.uuid4()
         # gather process arguments
         self.timeout = kwargs.pop('timeout', None) or self._default_timeout
         self.period = kwargs.pop('period', None) or self._default_period
@@ -259,10 +261,31 @@ class WaitCallback(WaitLib):
         assert callable(callback)
         if hasattr(callback, 'func_name'):
             kwargs.setdefault('identification', callback.func_name)
+        self.latest_callback_result = None
+        self.return_callback_result = kwargs.pop('return_callback_result', False)
         kwargs.setdefault('ready_method', callback)
         kwargs.setdefault('fail_method', callback)
         kwargs.setdefault('wait_method', callback)
         super(WaitCallback, self).__init__(**kwargs)
+
+    def set_ready(self, result):
+        super(WaitCallback, self).set_ready(result)
+        self.latest_callback_result = result
+
+    def set_fail(self, result):
+        super(WaitCallback, self).set_fail(result)
+        self.latest_callback_result = result
+
+    def set_wait(self, result):
+        super(WaitCallback, self).set_wait(result)
+        self.latest_callback_result = result
+
+    def wait(self):
+        r = super(WaitCallback, self).wait()
+        if self.return_callback_result:
+            return self.latest_callback_result
+        else:
+            return r
 
 
 def wait_for_callback(callback, **kwargs):
@@ -274,6 +297,21 @@ def wait_for_callback(callback, **kwargs):
     :param kwargs:
     :return:
     """
+    return WaitCallback(callback, **kwargs).wait()
+
+
+def wait_for_callback_value(callback, value, **kwargs):
+    """
+    wait for a callback function to return value(s)
+    if it returns anything else then we keep waiting (override with no_fail=False)
+    :param callback: callback function
+    :param value: waiting for value(s)
+    :param kwargs:
+    :return:
+    """
+    ready_values = value if isinstance(value, list) else [value]
+    kwargs.setdefault('ready_values', ready_values)
+    kwargs.setdefault('no_fail', True)
     return WaitCallback(callback, **kwargs).wait()
 
 
