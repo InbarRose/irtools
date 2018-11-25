@@ -23,7 +23,7 @@ log = logging.getLogger('irtools.utils.mail')
 
 def send_email(recipients, subject, text, attachments=None, message_callback=None, **kwargs):
     """
-    Sends an email from the automation email account to a list of recipients with given subject and text.
+    Sends an email from the recipients email account to a list of recipients with given subject and text.
     :param recipients: A list of emails
     :param subject: A subject string
     :param text: A formatting text of content
