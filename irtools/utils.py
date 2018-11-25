@@ -27,6 +27,7 @@ from _libs.docker_utils import *
 from _libs.datetime_utils import *
 from _libs.linux_utils import *
 from _libs.wait_utils import *
+from _libs.func_utils import *
 
 # logging
 log = logging.getLogger('irtools.utils')
