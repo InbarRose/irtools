@@ -31,10 +31,6 @@ class MissingTaskReferenceException(TaskManagerException):
     pass
 
 
-class AutomationError(Exception):
-    pass
-
-
 class AbstractTask(object):
 
     msg_starting = 'Task starting'
@@ -926,6 +922,61 @@ class SubTaskManager(TaskManager):
         """
         return "SubTaskManager(name='{}' parent='{}')".format(
             self.name, self.parent_task_manager.name if self.parent_task_manager else '')
+
+
+# CONVENIENCE task list and taskmanager generators
+
+
+def simple_task_list_gen(*funcs, **kwargs):
+    """generate a list of tasks from a list of functions with no arguments or requirements"""
+    indexed = kwargs.pop('indexed', False)
+    tasks = []
+    for idx, func in enumerate(funcs):
+        func_name = utils.sanitize(utils.get_func_name(func))
+        if indexed:
+            func_name = '{}_{}'.format(idx, func_name)
+        t = Task(name=func_name, func=func)
+        tasks.append(t)
+    return tasks
+
+
+def create_flat_manager(name, *tasks, **kwargs):
+    """tasks have no requirements and all run at the same time"""
+    tm = TaskManager(name=name, **kwargs)
+    for task in tasks:
+        if task.reqs:
+            raise TaskException('task has requirements', task)
+        tm.add_task(task)
+    return tm
+
+
+def create_serialized_manager(name, *tasks, **kwargs):
+    """tasks have no requirements and run one at a time in order given"""
+    kwargs.setdefault('auto_reqs_from_previous_task', True)
+    tm = TaskManager(name=name, **kwargs)
+    for task in tasks:
+        if task.reqs:
+            raise TaskException('task has requirements', task)
+        tm.add_task(task)
+    return tm
+
+
+# CONVENIENCE ret validators // common validations
+
+def validate_not_none(ret):
+    return 0 if ret is not None else 2
+
+
+def validate_path_exists(ret):
+    return 0 if os.path.exists(ret) else 2
+
+
+def validate_truthy(ret):
+    return 0 if bool(ret) else 2
+
+
+def validate_is_true(ret):
+    return 0 if ret is True else 2
 
 
 # TESTING
