@@ -4,6 +4,7 @@
 import time
 from optparse import OptionParser
 from collections import OrderedDict
+from threading import Thread
 
 # irtools Imports
 from irtools import *
@@ -70,7 +71,7 @@ class AbstractTask(object):
         self.ret_validation = kwargs.pop('ret_validation', None)
         if self.ret_validation:
             assert callable(self.ret_validation)
-        self._run_as_daemon = kwargs.pop('run_as_daemon', False)
+        self._run_as_daemon = kwargs.pop('run_as_daemon', True)
         self.announce_as_trace = kwargs.pop('announce_as_trace', False)
 
         # store extra kwargs
@@ -83,6 +84,7 @@ class AbstractTask(object):
         self.was_run = False
         self.operating = False
         self.finished = False
+        self.thread = None
 
         # members that get updated later
         self.task_manager = None
@@ -149,9 +151,13 @@ class AbstractTask(object):
         :return:
         """
         if self.kill_callback is not None and callable(self.kill_callback):
-            return self.kill_callback(self)
-        if self.task_manager and callable(self.task_manager.default_kill_callback):
-            return self.task_manager.default_kill_callback(self)
+            r = self.kill_callback(self)
+        elif self.task_manager and callable(self.task_manager.default_kill_callback):
+            r = self.task_manager.default_kill_callback(self)
+        else:
+            r = None
+        # todo: finish handling?
+        return r
 
     @property
     def run_as_daemon(self):
@@ -173,20 +179,13 @@ class AbstractTask(object):
         :param dry_run:
         :return:
         """
+        if self.operating:
+            raise TaskException('Task already operating', self)
+        t = Thread(target=self.go_wait, args=[dry_run])
         if self.run_as_daemon:
-            return self.go_daemon(dry_run)
-        else:
-            return self.go_thread(dry_run)
-
-    @utils.run_async
-    def go_thread(self, dry_run):
-        """run as a normal thread"""
-        return self.go_wait(dry_run)
-
-    @utils.run_async_daemon
-    def go_daemon(self, dry_run):
-        """run as a daemon thread"""
-        return self.go_wait(dry_run)
+            t.daemon = True
+        self.thread = t
+        self.thread.start()
 
     def _start(self):
         """
@@ -458,6 +457,7 @@ class AbstractTaskManager(object):
         self.tasks_announce_trace = kwargs.pop('tasks_announce_trace', False)
         self.announce_as_trace = kwargs.pop('announce_as_trace', False)
         self.run_tasks_as_daemons = kwargs.pop('run_tasks_as_daemons', False)
+        self.stop_running_tasks_on_halt = kwargs.pop('stop_running_tasks_on_halt', False)
         self.report_still_running_tasks = kwargs.pop('report_still_running_tasks', True)
 
         # store extra kwargs
@@ -623,7 +623,7 @@ class AbstractTaskManager(object):
         """handle a task reaching its timeout"""
         self.announce(log.error, self.msg_task_timeout,
                       task=task.name, timeout=task.timeout, elapsed=int(task.elapsed_time))
-        task.kill()
+        task.kill_task()
         self.stop_operating = True
 
     def handle_task_reports_finished(self, task):
@@ -636,6 +636,13 @@ class AbstractTaskManager(object):
     def handle_operating_loop_halted(self):
         """what happens when operating=False during the main loop"""
         self.announce(log.error, self.msg_operating_halted, current_tasks=self._get_running_tasks())
+        if self.stop_running_tasks_on_halt:
+            self.stop_all_tasks()
+
+    def stop_all_tasks(self):
+        """stop all tasks that are currently running"""
+        for task_name, task in self._iter_running_tasks():
+            task.kill_task()
 
     def _get_ready_tasks(self):
         """gets all the task names of all tasks that are ready to operate"""
