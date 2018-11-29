@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 
 # Standard Imports
-import functools
 
 # irtools Imports
 from irtools import *
@@ -10,9 +9,9 @@ from irtools import *
 log = logging.getLogger('irtools.utils.func')
 
 
-def get_func_name(func, raise_on_fail=True):
+def get_func_name(func, raise_on_fail=True, raise_on_lambda=False):
     func_name = None
-    if isinstance(func, function):
+    if callable(func):
         try:
             func_name = getattr(func, 'func_name', None)
         except AttributeError:
@@ -22,6 +21,9 @@ def get_func_name(func, raise_on_fail=True):
 
     if func_name is None and raise_on_fail:
         raise RuntimeError('could not get func_name from func: func={}'.format(func))
+
+    if raise_on_lambda and func_name == '<lambda>':
+        raise RuntimeError('could not get func_name from lambda (they have none): lambda={}'.format(func))
 
     return func_name
 
