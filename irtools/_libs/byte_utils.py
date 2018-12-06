@@ -67,7 +67,7 @@ def check_file_size(file_path, min_file_size=0):
     try:
         size = os.path.getsize(file_path)
     except Exception as exc:
-        log.error('Exception retreiving file size: file_path={} exc={}'.format(file_path, exc))
+        log.error('Exception retrieving file size: file_path={} exc={}'.format(file_path, exc))
     else:
         log.trace('check file size: file={} min_file_size={} actual_size={}'.format(file_path, min_file_size, size))
         return bool(size > min_file_size)
