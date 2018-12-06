@@ -938,7 +938,7 @@ def simple_task_list_gen(*funcs, **kwargs):
     """generate a list of tasks from a list of functions with no arguments or requirements"""
     indexed = kwargs.pop('indexed', False)
     tasks = []
-    for idx, func in enumerate(funcs):
+    for idx, func in enumerate(funcs, start=1):
         func_name = utils.sanitize(utils.get_func_name(func))
         if indexed:
             func_name = '{}_{}'.format(idx, func_name)
@@ -984,85 +984,3 @@ def validate_truthy(ret):
 
 def validate_is_true(ret):
     return 0 if ret is True else 2
-
-
-# TESTING
-
-def _log(text):
-    log.info('log: text={}'.format(text))
-
-
-def _loop_log_wait(text, loop, wait):
-    for l in range(loop):
-        log.info('loop_log_wait: text={} loop={} wait={}'.format(text, l, wait))
-        time.sleep(wait)
-
-
-def test():
-    tm = TaskManager('test')
-
-    tm.add_task(Task(name='test_1', func=_log, fargs=['test_1']))
-    tm.add_task(Task(name='test_2', reqs='test_1', func=_loop_log_wait, fargs=['test_2', 2, 1]))
-    tm.add_task(Task(name='test_3', reqs='test_1', func=_log, fargs=['test_3']))
-    tm.add_task(Task(name='test_4', reqs='test_2', func=_loop_log_wait, fargs=['test_4', 5, 1], active=False))
-    tm.add_task(Task(name='test_5', reqs='test_1', func=_loop_log_wait, fargs=['test_5', 10, 1]))
-    tm.add_task(Task(name='test_6', reqs='test_3 test_4', func=_loop_log_wait, fargs=['test_6', 2, 3]))
-    tm.add_task(Task(name='test_7', reqs='test_6 test_5', func=_loop_log_wait, fargs=['test_7', 5, 1], active=False))
-    tm.add_task(Task(name='test_8', reqs='test_7', func=_loop_log_wait, fargs=['test_8', 5, 1]))
-    tm.add_task(Task(name='test_9', reqs='test_8 test_7', func=_loop_log_wait, fargs=['test_9', 5, 1]))
-
-    tm.go()
-
-    log.info('task_rcs: {}'.format(tm.task_rcs))
-
-    return tm.worst_rc
-
-
-def testsub():
-    tm = TaskManager('parent')
-
-    stm = SubTaskManager('child')
-
-    stm.add_task(Task(name='test_1', func=_log, fargs=['test_1']))
-    stm.add_task(Task(name='test_2', reqs='test_1', func=_loop_log_wait, fargs=['test_2', 2, 1]))
-    stm.add_task(Task(name='test_3', reqs='test_1', func=_log, fargs=['test_3']))
-    stm.add_task(Task(name='test_4', reqs='test_2', func=_loop_log_wait, fargs=['test_4', 5, 1], active=False))
-    stm.add_task(Task(name='test_5', reqs='test_1', func=_loop_log_wait, fargs=['test_5', 10, 1]))
-    stm.add_task(Task(name='test_6', reqs='test_3 test_4', func=_loop_log_wait, fargs=['test_6', 2, 3]))
-    stm.add_task(Task(name='test_7', reqs='test_6 test_5', func=_loop_log_wait, fargs=['test_7', 5, 1], active=False))
-    stm.add_task(Task(name='test_8', reqs='test_7', func=_loop_log_wait, fargs=['test_8', 5, 1]))
-    stm.add_task(Task(name='test_9', reqs='test_8 test_7', func=_loop_log_wait, fargs=['test_9', 5, 1]))
-
-    tm.add_task(Task(name='task1', func=_loop_log_wait, fargs=['task1', 2, 1]))
-    tm.add_task(SubManagerTask(name='sub', manager=stm, reqs='task1'))
-    tm.add_task(Task(name='task2', func=_loop_log_wait, fargs=['task2', 2, 1], reqs='sub'))
-    tm.add_task(Task(name='task3', func=_loop_log_wait, fargs=['task3', 2, 1], reqs='task1'))
-
-    tm.go()
-
-    log.info('task_rcs: {}'.format(tm.task_rcs))
-
-    return tm.worst_rc
-
-
-def main(args):
-    parser = OptionParser()
-    parser.add_option('--log-level', '--ll', dest='log_level', help='Log Level (0=info, 1=debug, 2=trace)')
-    parser.add_option('--log-file', '--lf', dest='log_file', help='Log file', default=ir_log_dir + '/deploy.log')
-    options, args = parser.parse_args(args)
-
-    utils.logging_setup(log_level=options.log_level, log_file=options.log_file)
-
-    if not args:
-        parser.error('no action chosen')
-
-    if args[0] == 'test':
-        return test()
-    elif args[0] == 'testsub':
-        return testsub()
-    else:
-        parser.error('bad action')
-
-
-if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
