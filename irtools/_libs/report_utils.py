@@ -82,7 +82,7 @@ def create_junit_results(data, output=None, **kwargs):
     dict = {suite: {test: {stderr,stdout,time,class,err,fail,skip}}}
     list = {suite: [(test, {stderr,stdout,time,class,err,fail,skip})]}
     :param data: A dictionary with dict or list hierarchy
-    :param output: A filename to write results to  /path/to/file/*.junit.xml (for automation, place under report dir)
+    :param output: A filename to write results to  /path/to/file/*.junit.xml
     :return: Returns an XML string if no output, else nothing.
     """
     log.debug('creating junit results: output={}'.format(output))

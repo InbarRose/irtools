@@ -425,6 +425,31 @@ def read_csv(file_name, return_headers=False):
     return rows
 
 
+def iread_csv(file_name, return_headers=False):
+    """
+    iter-reads a csv file using DictReader and returns a rowdicts generator
+    :param file_name: path of the file
+    :param return_headers: first yield is the headers
+    :return: rows read from csv as generator
+    """
+    log.trace('reading csv file: path={}'.format(file_name))
+    if not check_file_size(file_name):
+        # verify file is not empty
+        log.warn('csv file size is 0 bytes: csv={}'.format(file_name))
+        raise StopIteration()
+    f = open(file_name, 'rb')
+    reader = DictReader(f)
+    try:
+        if return_headers:
+            yield reader.fieldnames
+        for row in reader:
+            yield row
+    except StopIteration:
+        f.close()
+    finally:
+        f.close()
+
+
 def read_json(file_name, json_kwargs=None, **kwargs):
     """
     reads a json file using read_file and creates a python object using json module
@@ -635,7 +660,7 @@ def replace_content_in_file(filepath, replacements, raise_on_fail=True, **kwargs
 
 __all__ = [
     'check_makedir', 'find_single_path', 'find_files_recursively',
-    'read_file', 'write_file', 'read_csv', 'write_csv', 'read_json', 'write_json',
+    'read_file', 'write_file', 'read_csv', 'write_csv', 'read_json', 'write_json', 'iread_csv',
     'bulk_rename', 'file_diff', 'file_rotation', 'format_file', 'replace_content_in_file',
     'get_tmp_dir', 'write_to_tmp_file',
     # simple wrappers of copy/delete

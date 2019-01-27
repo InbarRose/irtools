@@ -4,6 +4,8 @@
 import time
 import subprocess
 from collections import namedtuple
+from functools import partial
+from wait_utils import wait_for_callback_value
 
 # Lib Imports
 from exec_utils import iexec
@@ -173,18 +175,13 @@ def wait_for_process_done_by_name(*procs, **kwargs):
 
     log.debug('waiting for procs to be finished: procs={} timeout={}'.format(procs, timeout))
 
-    start_time = time.time()
-    while True:
+    def callback():
         procs_running = get_proc_list(procs, **kwargs)
-        if len(procs_running) == 0:
-            return 0
+        return len(procs_running)
 
-        elapsed = time.time() - start_time
-        if elapsed > timeout:
-            log.error('waiting for processes timed out: procs_remaining={}'.format(procs_running))
-            return procs_running
-
-        time.sleep(period)
+    return wait_for_callback_value(
+        callback, 0, timeout=timeout, period=period, return_callback_result=True, identification='wait_for_process'
+    )
 
 
 def detailed_proc_info_from_pids(pids):

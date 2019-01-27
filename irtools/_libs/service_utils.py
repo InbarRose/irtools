@@ -3,9 +3,11 @@
 # Standard Imports
 import re
 import time
+from functools import partial
 
 # Lib Imports
 from exec_utils import iexec
+from wait_utils import wait_for_callback_value
 
 # irtools Imports
 from irtools import *
@@ -81,18 +83,10 @@ def wait_for_service_state(name, state='RUNNING', timeout=30, **kwargs):
     :param kwargs:
     :return:
     """
-    start_time = time.time()
-    raise_on_timeout = kwargs.get('raise_on_timeout', True)
-    while True:
-        current_state = get_service_state(name, **kwargs)
-        if current_state == state:
-            return True
-        if timeout and time.time() - start_time > timeout:
-            log.error('Timeout reached waiting for service state: service={} state={}'.format(name, state))
-            if raise_on_timeout:
-                raise RuntimeError('Timeout reached waiting for service state')
-            return False
-        time.sleep(1)
+    raise_on_timeout = kwargs.pop('raise_on_timeout', True)
+    callback = partial(get_service_state, name, **kwargs)
+    return wait_for_callback_value(
+        callback, state, timeout=timeout, raise_on_timeout=raise_on_timeout, identification='wait_for_service')
 
 
 def get_service_state(name, **kwargs):
@@ -127,8 +121,9 @@ def get_service_state(name, **kwargs):
 
 def query_windows_service(name, **kwargs):
     """query a service on windows"""
-    text = iexec('sc query {}'.format(name), **kwargs).out
-    return dict(mo.groups() for mo in [SERVICE_QUERY_KEY_VALUE_RE.search(line.strip()) for line in text] if mo)
+    kwargs.setdefault('to_console', False)
+    ret = iexec('sc query {}'.format(name), **kwargs)
+    return dict(mo.groups() for mo in [SERVICE_QUERY_KEY_VALUE_RE.search(line.strip()) for line in ret.out] if mo)
 
 
 __all__ = [

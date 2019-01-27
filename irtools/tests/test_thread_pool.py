@@ -11,6 +11,7 @@ from irtools.kits import thread_pool
 
 # Logging
 log = logging.getLogger('irtools.tests.thread_pool')
+utils.logging_setup(level=0, log_file=ir_log_dir + '/test_thread_pool.log')
 
 
 class TestThreadPool(unittest.TestCase):
