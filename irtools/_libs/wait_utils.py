@@ -375,4 +375,23 @@ def wait(**kwargs):
     return WaitLib(**kwargs)
 
 
-__all__ = ['wait_for_callback', 'wait_for_callback_value', 'wait_for_ready_or_fail', 'wait', 'WaitStatus']
+def wait_for_files_to_exist(*files, **kwargs):
+    """
+    wait for all files to exist
+    :param files: files to wait for
+    :param kwargs: kwargs for waitlib
+    :return:
+    """
+
+    def check_paths_exist(paths=files):
+        return all(map(os.path.exists, paths))
+
+    return WaitLib(ready_method=check_paths_exist, **kwargs).wait()
+
+
+__all__ = [
+    'wait_for_callback', 'wait_for_callback_value',
+    'wait_for_ready_or_fail',
+    'wait_for_files_to_exist',
+    'wait', 'WaitStatus'
+]
