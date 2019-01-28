@@ -21,8 +21,8 @@ class WaitLib(object):
     _default_period = 1      # default wait 1 second between checks
     _default_grace_time = 0  # default don't wait before starting to check
     _default_ready_values = None  # None - default behaviour (truthy = ready) / else contains result
-    _default_fail_values = None   # None - default behaviour (None = wait) / else contains result
-    _default_wait_values = None   # None - default behaviour (falsey = fail) / else contains result
+    _default_fail_values = None   # None - default behaviour (falsey = fail) / else contains result
+    _default_wait_values = None   # None - default behaviour (None = wait) / else contains result
 
     def __init__(self, **kwargs):
         # identification arguments
@@ -52,13 +52,13 @@ class WaitLib(object):
         # gather check_methods
         self.check_ready_method = kwargs.pop('ready_method')
         self.check_ready_values = kwargs.pop('ready_values', self._default_ready_values)
-        self.check_fail_method = kwargs.pop('fail_method')
+        self.check_fail_method = kwargs.pop('fail_method', None)
         self.check_fail_values = kwargs.pop('fail_values', self._default_fail_values)
-        self.check_wait_method = kwargs.pop('wait_method')
+        self.check_wait_method = kwargs.pop('wait_method', None)
         self.check_wait_values = kwargs.pop('wait_values', self._default_wait_values)
         assert callable(self.check_ready_method)
-        assert callable(self.check_fail_method)
-        assert callable(self.check_wait_method)
+        assert callable(self.check_fail_method) or self.check_fail_method is None
+        assert callable(self.check_wait_method) or self.check_wait_method is None
         # members
         self.status = WaitStatus.wait
         self.result = None
@@ -76,7 +76,12 @@ class WaitLib(object):
     def _get_wait_id_parts(self):
         parts = []
         if self.identification:
+            # add user-designated ID
             parts.append('id={}'.format(self.identification))
+        # if there are no other ID's add the UUID
+        if not parts:
+            parts.append('uuid={}'.format(self._uuid))
+        # finally, add timeout
         if self.timeout:
             parts.append('timeout={}'.format(self.timeout))
         return parts
@@ -146,15 +151,26 @@ class WaitLib(object):
         else:
             if self.log_trace:
                 log.trace('wait check_ready method result: {} result={}'.format(self.wait_id, r))
-            if (self.check_ready_values is None and bool(r) is True) or \
-                    (isinstance(self.check_ready_values, (list, tuple, set)) and r in self.check_ready_values):
+            if self._is_ready_result(r):
                 if self.log_process:
                     log.debug('wait Ready: {} r={}'.format(self.wait_id, r))
                 self.set_ready(r)
 
+    def _is_ready_result(self, result):
+        # if no ready values supplied, then we check if result has a truthy value
+        if self.check_ready_values is None and bool(result) is True:
+            return True
+        # if ready values are supplied, we check that the result is one of them
+        if isinstance(self.check_ready_values, (list, tuple, set)) and result in self.check_ready_values:
+            return True
+        # if none of conditions were met, then it is not ready
+        return False
+
     def check_fail(self):
         if self.no_fail:
             return
+        if self.check_fail_method is None:
+            return  # we don't have a fail method, we just wait
         try:
             if self.log_trace:
                 log.trace('wait calling check_fail method: {} method={}'.format(self.wait_id, self.check_fail_method))
@@ -172,14 +188,25 @@ class WaitLib(object):
         else:
             if self.log_trace:
                 log.trace('wait check_fail method result: {} result={}'.format(self.wait_id, r))
-            if (self.check_fail_values is None and bool(r) is False) or \
-                    (isinstance(self.check_fail_values, (list, tuple, set)) and r in self.check_fail_values):
+            if self._is_fail_result(r):
                 if self.log_process:
                     log.debug('wait Fail: {} r={}'.format(self.wait_id, r))
                 self.set_fail(r)
 
+    def _is_fail_result(self, result):
+        # if no fail values supplied, then we check if result has a falsey value
+        if self.check_fail_values is None and bool(result) is False:
+            return True
+        # if fail values are supplied, we check that the result is one of them
+        if isinstance(self.check_fail_values, (list, tuple, set)) and result in self.check_fail_values:
+            return True
+        # if none of conditions were met, then it is not fail
+        return False
+
     def check_wait(self):
         # this whole method might be unnecessary (since we should keep waiting until ready/timeout/fail anyway)
+        if self.check_wait_method is None:
+            return  # we don't have a wait method, we just wait
         try:
             if self.log_trace:
                 log.trace('wait calling check_wait method: {} method={}'.format(self.wait_id, self.check_wait_method))
@@ -197,11 +224,20 @@ class WaitLib(object):
         else:
             if self.log_trace:
                 log.trace('wait check_wait method result: {} result={}'.format(self.wait_id, r))
-            if (self.check_wait_values is None and r is None) or \
-                    (isinstance(self.check_wait_values, (list, tuple, set)) and r in self.check_wait_values):
+            if self._is_wait_result(r):
                 if self.log_process:
                     log.debug('wait Waiting: {} r={}'.format(self.wait_id, r))
                 self.set_wait(r)
+
+    def _is_wait_result(self, result):
+        # if no wait values supplied, then we check if result has a None value
+        if self.check_wait_values is None and result is None:
+            return True
+        # if wait values are supplied, we check that the result is one of them
+        if isinstance(self.check_wait_values, (list, tuple, set)) and result in self.check_wait_values:
+            return True
+        # if none of conditions were met, then it is not fail
+        return False
 
     def check_timeout(self):
         if self.timeout and self.elapsed_time > self.timeout:
@@ -264,8 +300,6 @@ class WaitCallback(WaitLib):
         self.latest_callback_result = None
         self.return_callback_result = kwargs.pop('return_callback_result', False)
         kwargs.setdefault('ready_method', callback)
-        kwargs.setdefault('fail_method', callback)
-        kwargs.setdefault('wait_method', callback)
         super(WaitCallback, self).__init__(**kwargs)
 
     def set_ready(self, result):
@@ -315,6 +349,21 @@ def wait_for_callback_value(callback, value, **kwargs):
     return WaitCallback(callback, **kwargs).wait()
 
 
+def wait_for_ready_or_fail(ready_callback, fail_callback, **kwargs):
+    """
+    wait for a callback function to return True,
+    if ready_callback returns True then we are ready
+    if fail_callback returns True then we fail
+    :param ready_callback: callback function
+    :param fail_callback: callback function
+    :param kwargs:
+    :return:
+    """
+    kwargs.setdefault('fail_values', [True])
+    kwargs.setdefault('ready_values', [True])
+    return WaitLib(ready_method=ready_callback, fail_method=fail_callback, **kwargs).wait()
+
+
 def wait(**kwargs):
     """
     function to call WaitLib
@@ -324,4 +373,4 @@ def wait(**kwargs):
     return WaitLib(**kwargs)
 
 
-__all__ = ['wait_for_callback', 'wait', 'WaitStatus']
+__all__ = ['wait_for_callback', 'wait_for_callback_value', 'wait_for_ready_or_fail', 'wait', 'WaitStatus']
