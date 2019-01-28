@@ -34,5 +34,8 @@ class TestWait(unittest.TestCase):
         self.assertTrue(waiter.result)
         self.assertIsNone(waiter.error)
 
-
-
+    def test_timeout(self):
+        waiter = wait_utils.WaitLib(ready_method=lambda: False,
+                                    timeout=2, no_fail=True, log_trace=True, raise_on_timeout=False)
+        waiter.wait()
+        self.assertEquals(wait_utils.WaitStatus.timeout, waiter.status)
