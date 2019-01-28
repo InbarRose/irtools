@@ -110,12 +110,16 @@ class WaitLib(object):
 
     def _do_period(self):
         if self.is_wait:
+            if self.log_trace:
+                log.trace('wait sleeping period: {} period={}'.format(self.wait_id, self.period))
             time.sleep(self.period)
 
     def get_status(self):
         if not self.is_wait:
             # status already set
             return self.status
+        if self.log_trace:
+            log.trace('wait checking status: {} elapsed={}'.format(self.wait_id, self.elapsed_time))
         # check the status
         self.check_ready()
         if self.is_ready:
@@ -123,9 +127,7 @@ class WaitLib(object):
         self.check_fail()
         if self.is_fail:
             return self.status
-        self.check_wait()
-        if self.is_wait:
-            return self.status
+        self.check_wait()  # run checks for wait?
         self.check_timeout()
         if self.is_timeout:
             return self.status
@@ -240,6 +242,8 @@ class WaitLib(object):
         return False
 
     def check_timeout(self):
+        if self.log_trace:
+            log.trace('wait checking for timeout: {} timeout={}'.format(self.wait_id, self.timeout))
         if self.timeout and self.elapsed_time > self.timeout:
             self.set_timeout()
             msg = 'wait Timed out: {} elapsed={}'.format(self.wait_id, self.elapsed_time)
@@ -308,10 +312,6 @@ class WaitCallback(WaitLib):
 
     def set_fail(self, result):
         super(WaitCallback, self).set_fail(result)
-        self.latest_callback_result = result
-
-    def set_wait(self, result):
-        super(WaitCallback, self).set_wait(result)
         self.latest_callback_result = result
 
     def wait(self):
