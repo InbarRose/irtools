@@ -127,9 +127,11 @@ class WaitLib(object):
         self.check_fail()
         if self.is_fail:
             return self.status
-        self.check_wait()  # run checks for wait?
         self.check_timeout()
         if self.is_timeout:
+            return self.status
+        self.check_wait()  # run checks for wait?
+        if self.is_wait:
             return self.status
         # if we get here we have a problem
         self.set_error('could not resolve status')
