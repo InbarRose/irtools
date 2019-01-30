@@ -3,10 +3,12 @@
 # Standard Imports
 import time
 import uuid
+import datetime
 
 # irtools Imports
 from irtools import *
 from enum_utils import enum
+from datetime_utils import seconds_to_future
 
 # logging
 log = logging.getLogger('irtools.utils.wait')
@@ -17,7 +19,7 @@ WaitStatus = enum(ready='READY', wait='WAIT', fail='FAIL', timeout='TIMEOUT', er
 class WaitLib(object):
     """wait for something, supports ready, fail, and wait function calls to check status"""
 
-    _default_timeout = 120     # default no timeout (2 minutes)
+    _default_timeout = 120     # default timeout (2 minutes)
     _default_period = 1      # default wait 1 second between checks
     _default_grace_time = 0  # default don't wait before starting to check
     _default_ready_values = None  # None - default behaviour (truthy = ready) / else contains result
@@ -34,7 +36,8 @@ class WaitLib(object):
         self.grace_time = kwargs.pop('grace_time', None) or self._default_grace_time
         assert isinstance(self.grace_time, int) and self.grace_time >= 0
         assert isinstance(self.period, (int, float)) and self.period > 0
-        assert isinstance(self.timeout, int) and self.timeout >= self.grace_time + self.period
+        assert isinstance(self.timeout, (int, datetime.datetime))
+        self._timeout_seconds = None
         # gather process operating arguments (flags)
         self.log_process = kwargs.pop('log_process', True)
         self.log_trace = kwargs.pop('log_trace', False)
@@ -86,7 +89,26 @@ class WaitLib(object):
             parts.append('timeout={}'.format(self.timeout))
         return parts
 
+    def _check_timeout(self):
+        if isinstance(self.timeout, datetime.datetime):
+            # timeout given as a datetime (should be in the future) convert to seconds
+            log.debug('wait converting datetime timeout to seconds: {}'.format(self.wait_id))
+            self._timeout_seconds = seconds_to_future(self.timeout, round_up=True, raise_on_past=True)
+        elif isinstance(self.timeout, int):
+            self._timeout_seconds = self.timeout
+        else:
+            raise RuntimeError(
+                'wait unexpected error, bad type for timeout: {}'.format(self.wait_id),
+                type(self.timeout), self.timeout
+            )
+
+        if self._timeout_seconds < self.grace_time + self.period:
+            raise RuntimeError(
+                'wait timeout is too short, not enough time for a single check!?: {}'.format(self.wait_id)
+            )
+
     def wait(self):
+        self._check_timeout()
         if self.log_process:
             log.info('wait Starting: {}'.format(self.wait_id))
         self.start_time = time.time()
@@ -246,7 +268,7 @@ class WaitLib(object):
     def check_timeout(self):
         if self.log_trace:
             log.trace('wait checking for timeout: {} timeout={}'.format(self.wait_id, self.timeout))
-        if self.timeout and self.elapsed_time > self.timeout:
+        if self.timeout and self.elapsed_time > self._timeout_seconds:
             self.set_timeout()
             msg = 'wait Timed out: {} elapsed={}'.format(self.wait_id, self.elapsed_time)
             if self.log_process:
