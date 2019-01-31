@@ -154,18 +154,36 @@ def validate_zip(path_to_zip, raise_on_fail=True):
     return True
 
 
-def smart_copy(src, dst, ignore_patterns=(), ignore_dst_dir_exists=True):
+def smart_copy(src, dst, ignore_patterns=(), ignore_dst_dir_exists=True, build_dst_dirs=True):
     """
-    Copies a path `src` to `dst` including dirs and files, if src is file, will also copy
+    Copies a path `src` to `dst` including dirs and files.
+    if src is file, will build dirtree at destination
     :param src: file or dir tree
     :param dst: destination dir
     :param ignore_patterns: sequence of glob-style patterns to ignore
     :param ignore_dst_dir_exists: if dst dir exists, copy each file into it
+    :param build_dst_dirs: build dirtree at dst (check_makedir on [dst dirname for files else dst])
     :return: success or failure boolean
     """
     try:
-        if os.path.isfile(src) and not any(p.strip('*') in src for p in ignore_patterns):
-            shutil.copy(src, dst)
+        if os.path.isfile(src):
+            # source is a file
+            if any(p.strip('*') in src for p in ignore_patterns):
+                # source file is in ignored list, we should do nothing
+                return False
+            if build_dst_dirs and not os.path.exists(dst):
+                # if we should build dst dirs and the dst does not exist, we first assume dst is a file and make its dir
+                check_makedir(os.path.dirname(dst))
+            try:
+                shutil.copy(src, dst)  # copy src into dst location, assuming dst was a filepath and dirs exist
+            except IOError as exc:
+                if exc.errno == 2:
+                    # "No such file or directory" can be ignored, otherwise raise
+                    # likely we are here because dst was a dir not a file and it didn't exist
+                    check_makedir(dst)  # so lets make dst dir
+                    shutil.copy(src, dst)  # try again with no catching
+                else:
+                    raise
         elif os.path.exists(dst) and os.path.isdir(dst):
             if not ignore_dst_dir_exists:
                 log.error('smart_copy failed, cannot copy a directory into an existing directory')
@@ -174,6 +192,7 @@ def smart_copy(src, dst, ignore_patterns=(), ignore_dst_dir_exists=True):
                 fpath = os.path.join(src, fname)
                 smart_copy(fpath, dst, ignore_patterns, ignore_dst_dir_exists)
         else:
+            # copytree, dst should not exist
             shutil.copytree(src, dst, ignore=shutil.ignore_patterns(*ignore_patterns))
     except OSError as exc:
         log.error('smart_copy failed: exc={}'.format(exc))
