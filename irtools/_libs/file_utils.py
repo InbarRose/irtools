@@ -154,7 +154,7 @@ def validate_zip(path_to_zip, raise_on_fail=True):
     return True
 
 
-def smart_copy(src, dst, ignore_patterns=(), ignore_dst_dir_exists=True, build_dst_dirs=True):
+def smart_copy(src, dst, ignore_patterns=(), ignore_dst_dir_exists=True, build_dst_dirs=True, raise_on_fail=True):
     """
     Copies a path `src` to `dst` including dirs and files.
     if src is file, will build dirtree at destination
@@ -163,6 +163,7 @@ def smart_copy(src, dst, ignore_patterns=(), ignore_dst_dir_exists=True, build_d
     :param ignore_patterns: sequence of glob-style patterns to ignore
     :param ignore_dst_dir_exists: if dst dir exists, copy each file into it
     :param build_dst_dirs: build dirtree at dst (check_makedir on [dst dirname for files else dst])
+    :param raise_on_fail: raise exception on failure
     :return: success or failure boolean
     """
     try:
@@ -196,6 +197,8 @@ def smart_copy(src, dst, ignore_patterns=(), ignore_dst_dir_exists=True, build_d
             shutil.copytree(src, dst, ignore=shutil.ignore_patterns(*ignore_patterns))
     except OSError as exc:
         log.error('smart_copy failed: exc={}'.format(exc))
+        if raise_on_fail:
+            raise
         return False
     else:
         return True
