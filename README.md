@@ -12,6 +12,10 @@ https://pypi.org/project/py-irtools/
 
 https://py-irtools.slack.com
 
+> Now with Travis CI
+
+https://travis-ci.org/InbarRose/irtools
+
 ## What is it?
 
 A set of tools that I find myself using often.
