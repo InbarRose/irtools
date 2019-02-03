@@ -9,6 +9,7 @@ import pickle
 import itertools
 import multiprocessing
 from datetime import datetime
+from collections import OrderedDict
 
 # Lib Imports
 from file_utils import write_file, read_file, get_tmp_dir
@@ -78,7 +79,8 @@ class MultiProcess:
 
 class ExecResult:
     """Result of an execution. Has STDOUT and STDERR and RC."""
-    def __init__(self, out=None, err=None, rc=0, time_taken=None, cmd=None, ordered_out=None, start=None, timeout=0):
+    def __init__(self, out=None, err=None, rc=0, time_taken=None, cmd=None, ordered_out=None, start=None, timeout=0,
+                 subprocess_kwargs=None):
         self.out = out or []
         self.err = err or []
         self.rc = rc
@@ -90,6 +92,7 @@ class ExecResult:
         self.timeout = timeout
         self.cmd = cmd
         self.ordered_out = ordered_out
+        self.subprocess_kwargs = subprocess_kwargs or {}
 
     def contents(self):
         """Returns all the content of the execution as a string, ordered if possible, else stdout first then stderr"""
@@ -135,20 +138,42 @@ class ExecResult:
         else:
             raise ValueError('Unsupported type: type={}'.format(type(content)))
 
-    def debug_output(self):
+    def debug_output(self, dump_kwargs=False):
         """returns a debug output string that is ready for printing or writing"""
-        return '{head}\n\n{tail}'.format(head=self.get_dump_header(), tail=self.contents())
+        return self.get_dump_data(dump_kwargs)
 
-    def get_dump_header(self):
+    def get_dump_header(self, as_str=True):
         """Formats all headers for dumping; cmd, rc, start, time"""
         headers = ['cmd', 'rc', 'start', 'start_datetime', 'time']
-        head = '\n'.join(['{}: {}'.format(h, getattr(self, h)) for h in headers])
+        if as_str:
+            head = '\n'.join(['{}: {}'.format(h, getattr(self, h)) for h in headers])
+        else:
+            head = OrderedDict((h, getattr(self, h)) for h in headers)
         return head
 
-    def to_dump_file(self, dump_file, dump_file_rotate=False):
+    def get_subprocess_kwargs_dump(self):
+        """gets the subprocess kwargs that were passed to the iexec, if any"""
+        if self.subprocess_kwargs:
+            kwargs_dump = '<subprocess kwargs>\n{}'.format(
+                '\n'.join(['{}: {}'.format(k, v) for k, v in sorted(self.subprocess_kwargs.items())]))
+        else:
+            kwargs_dump = '<no subprocess kwargs>'
+        return kwargs_dump
+
+    def to_dump_file(self, dump_file, dump_file_rotate=False, dump_kwargs=False):
         """Dump to dump file, handles all writing and rotating"""
-        dump_file = write_file(dump_file, contents=self.get_dump_header() + '\n\n', rotate=dump_file_rotate)
-        return write_file(dump_file, contents=self.list_contents(), mode='a')
+        return write_file(dump_file, contents=self.get_dump_data(dump_kwargs), rotate=dump_file_rotate)
+
+    def get_dump_data(self, dump_kwargs, as_str=True):
+        """convenience method ot get the dump data"""
+        contents = OrderedDict()
+        contents['head'] = self.get_dump_header(as_str)
+        if dump_kwargs:
+            contents['kwargs'] = self.get_subprocess_kwargs_dump() if as_str else self.subprocess_kwargs.copy()
+        contents['data'] = self.contents() if as_str else {'out': self.out, 'err': self.err}
+        if as_str:
+            return '\n\n'.join(contents.values())
+        return contents
 
     def append_output(self, log_id=None):
         """returns a string representation of the object with extra newlines to be appended to for logging
@@ -187,8 +212,8 @@ class ExecResult:
         return not self.bad
 
     def __repr__(self):
-        return 'ExecResult(cmd={} out={} err={} rc={} start={} time={} timeout={})'.format(
-            self.cmd, self.out, self.err, self.rc, self.start, self.time, self.timeout)
+        return 'ExecResult(cmd={} out={} err={} rc={} start={} time={} timeout={} kwargs={})'.format(
+            self.cmd, self.out, self.err, self.rc, self.start, self.time, self.timeout, self.subprocess_kwargs)
 
     def __str__(self):
         return str(self.__repr__())
@@ -255,6 +280,7 @@ def iexec(cmd, **kwargs):
     alt_out = kwargs.pop('alt_out', None)
     alt_err = kwargs.pop('alt_err', alt_out)
     iexec_communicate = kwargs.pop('iexec_communicate', None)
+    dump_kwargs = kwargs.pop('dump_kwargs', False)
 
     if not isinstance(cmd, str):
         cmd = subprocess.list2cmdline(cmd)
@@ -287,9 +313,11 @@ def iexec(cmd, **kwargs):
             log.info(msg)
 
     pkwargs = {'shell': True, 'stdout': subprocess.PIPE, 'stderr': subprocess.PIPE}
+    subprocess_kwargs = {}
     for arg in SUBPROCESS_KWARGS:
         if arg in kwargs and arg not in pkwargs:
-            pkwargs[arg] = kwargs[arg]
+            pkwargs[arg] = kwargs[arg]  # kwargs to actually pass to the subprocess
+            subprocess_kwargs[arg] = kwargs[arg]  # the kwargs the user supplied
 
     stdout = []
     stderr = []
@@ -359,10 +387,10 @@ def iexec(cmd, **kwargs):
                 raise RuntimeError('Timeout executing cmd on linux')
 
     time_taken = time.time() - start_time
-    result = ExecResult(stdout, stderr, rc, time_taken, cmd, ordered_out, start_time, timeout)
+    result = ExecResult(stdout, stderr, rc, time_taken, cmd, ordered_out, start_time, timeout, subprocess_kwargs)
 
     if dump_file:
-        result.to_dump_file(dump_file, dump_file_rotate)
+        result.to_dump_file(dump_file, dump_file_rotate, dump_kwargs=dump_kwargs)
 
     if trace_file:
         write_file(trace_file, contents=result.append_output(), mode='a')
