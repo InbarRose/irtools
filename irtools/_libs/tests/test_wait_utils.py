@@ -57,7 +57,7 @@ class TestWait(unittest.TestCase):
         self.assertAlmostEqual(
             (dt_in_2_seconds - datetime.datetime(1970, 1, 1)).total_seconds(),
             (dt_end - datetime.datetime(1970, 1, 1)).total_seconds(),
-            places=2
+            delta=1
         )
         self.assertAlmostEqual(2, duration.total_seconds(), places=2)
 
@@ -70,6 +70,6 @@ class TestWait(unittest.TestCase):
         self.assertAlmostEqual(
             (dt_in_2_seconds - datetime.datetime(1970, 1, 1)).total_seconds(),
             (dt_end - datetime.datetime(1970, 1, 1)).total_seconds(),
-            places=2
+            delta=1
         )
         self.assertAlmostEqual(2, duration.total_seconds(), places=2)
