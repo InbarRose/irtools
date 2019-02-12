@@ -89,7 +89,7 @@ class WaitLib(object):
             parts.append('timeout={}'.format(self.timeout))
         return parts
 
-    def _check_timeout(self):
+    def _check_timeout_valid(self):
         if isinstance(self.timeout, datetime.datetime):
             # timeout given as a datetime (should be in the future) convert to seconds
             log.debug('wait converting datetime timeout to seconds: {}'.format(self.wait_id))
@@ -108,7 +108,7 @@ class WaitLib(object):
             )
 
     def wait(self):
-        self._check_timeout()
+        self._check_timeout_valid()
         if self.log_process:
             log.info('wait Starting: {}'.format(self.wait_id))
         self.start_time = time.time()
