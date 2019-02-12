@@ -438,7 +438,7 @@ def sleep_until_datetime(dt_wait):
     dt_now = datetime.datetime.now()
     assert dt_wait > dt_now, 'wait time is in the past'
     td_for_wait = dt_wait - dt_now
-    wait_time = int(td_for_wait.total_seconds())
+    wait_time = td_for_wait.total_seconds()
     log.debug('waiting until datetime: timedelta={} seconds={}'.format(td_for_wait, wait_time))
     time.sleep(wait_time)
 
