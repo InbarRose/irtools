@@ -90,7 +90,7 @@ class KeyboardKey(object):
     leftwin = 0x5B
     rightwin = 0x5C
     apps = 0x5D
-    time.sleep = 0x5F
+    sleep = 0x5F
     numpad0 = 0x60
     numpad1 = 0x61
     numpad3 = 0x63
@@ -358,11 +358,10 @@ class KeyboardCharacters(object):
     characters_requiring_shift = shift_map_letter_characters.values() + \
                                  shift_map_numbers.values() + \
                                  shift_map_punctuation_characters.values()
+    characters_that_are_whitespace = string.whitespace
     # map to key names for special characters
     map_key_to_punctuation_characters = {
-        KeyboardKey.space: [' '],
         KeyboardKey.accent: ['`', '~'],
-
         KeyboardKey.dash: ['-', '_'],
         KeyboardKey.equals: ['=', '+'],
 
@@ -378,19 +377,29 @@ class KeyboardCharacters(object):
         KeyboardKey.forwardslash: ['/', '?'],
 
     }
+    map_key_to_whitespace_characters = {
+        KeyboardKey.space: [' '],
+        KeyboardKey.tab: ['\t'],
+        KeyboardKey.enter: ['\n'],
+    }
 
     @classmethod
     def character_to_key_name(cls, character):
         """get the key_name of the keyboard button that maps to this character"""
+        assert character in string.printable
         if character in cls.characters_that_are_numbers:
             key_name = 'num{}'.format(cls.shift_map_numbers.get(character, character))
             return cls.get_key(key_name)
         elif character in cls.characters_that_are_letters:
             key_name = character.lower()
             return cls.get_key(key_name)
-        else:
+        elif character in cls.characters_that_are_punctuation:
             for key, punctuations in cls.map_key_to_punctuation_characters.items():
                 if character in punctuations:
+                    return key
+        elif character in cls.characters_that_are_whitespace:
+            for key, whitespace in cls.map_key_to_whitespace_characters.items():
+                if character in whitespace:
                     return key
         raise UnknownKeyError(character)
 
