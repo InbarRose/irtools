@@ -25,227 +25,7 @@ class UnknownButtonError(UnknownKeyOrButtonError):
     pass
 
 
-class VirtualInterface(object):
-    # press/release time delay_press
-    delay_hold = 0.01
-    delay_release = 0.01
-
-    @classmethod
-    def _delay_hold(cls, delay_hold):
-        delay = delay_hold or cls.delay_hold
-        time.sleep(delay)
-
-    @classmethod
-    def _delay_release(cls, delay_release):
-        delay = delay_release or cls.delay_release
-        time.sleep(delay)
-
-
-class VirtualKeyboard(VirtualInterface):
-
-    @classmethod
-    def hold_key(cls, key, **kwargs):
-        """Presses key"""
-        user32.keybd_event(key, 0, 0, 0)
-        cls._delay_hold(**kwargs)
-
-    @classmethod
-    def release_key(cls, key, **kwargs):
-        """Releases key"""
-        user32.keybd_event(key, 0, 2, 0)
-        cls._delay_release(**kwargs)
-
-    @classmethod
-    def press_key(cls, key, **kwargs):
-        """Presses and releases the key"""
-        cls.hold_key(key, **kwargs)
-        cls.release_key(key, **kwargs)
-
-    @classmethod
-    def shift_press_key(cls, key, **kwargs):
-        """Presses a key while shift is held down"""
-        cls.hold_key(KeyboardButton.shift, **kwargs)
-        cls.press_key(key, **kwargs)
-        cls.release_key(KeyboardButton.shift, **kwargs)
-
-    @classmethod
-    def type_character(cls, character, **kwargs):
-        """type the character using the virtual keyboard"""
-        use_shift = KeyboardButton.character_requires_shift(character)
-        key_to_press = KeyboardButton.character_to_key_name(character)
-        if use_shift:
-            cls.shift_press_key(key_to_press, **kwargs)
-        else:
-            cls.press_key(key_to_press, **kwargs)
-
-    @classmethod
-    def type_sequence(cls, sequence, **kwargs):
-        """type out a sequence of characters using the virtual keyboard"""
-        for character in sequence:
-            cls.type_character(character, **kwargs)
-
-
-class VirtualMouse(VirtualInterface):
-
-    @classmethod
-    def set_mouse_to_position(cls, x, y):
-        user32.SetCursorPos(x, y)
-
-    @classmethod
-    def click_left_button(cls, **kwargs):
-        cls.hold_left_button(**kwargs)
-        cls.release_left_button(**kwargs)
-
-    @classmethod
-    def click_right_button(cls, **kwargs):
-        cls.hold_right_button(**kwargs)
-        cls.release_right_button(**kwargs)
-
-    @classmethod
-    def click_middle_button(cls, **kwargs):
-        cls.hold_middle_button(**kwargs)
-        cls.release_middle_button(**kwargs)
-
-    @classmethod
-    def hold_left_button(cls, **kwargs):
-        user32.mouse_event(0x0002, 0, 0, 0, 0)
-        cls._delay_hold(**kwargs)
-
-    @classmethod
-    def hold_right_button(cls, **kwargs):
-        user32.mouse_event(0x0008, 0, 0, 0, 0)
-        cls._delay_hold(**kwargs)
-
-    @classmethod
-    def hold_middle_button(cls, **kwargs):
-        user32.mouse_event(0x00020, 0, 0, 0, 0)
-        cls._delay_hold(**kwargs)
-
-    @classmethod
-    def release_left_button(cls, **kwargs):
-        user32.mouse_event(0x0004, 0, 0, 0, 0)
-        cls._delay_release(**kwargs)
-
-    @classmethod
-    def release_right_button(cls, **kwargs):
-        user32.mouse_event(0x00010, 0, 0, 0, 0)
-        cls._delay_release(**kwargs)
-
-    @classmethod
-    def release_middle_button(cls, **kwargs):
-        user32.mouse_event(0x00040, 0, 0, 0, 0)
-        cls._delay_release(**kwargs)
-
-    @classmethod
-    def click_mouse_button(cls, button, **kwargs):
-        if button == MouseButton.left:
-            cls.click_left_button(**kwargs)
-        elif button == MouseButton.right:
-            cls.click_right_button(**kwargs)
-        elif button == MouseButton.middle:
-            cls.click_middle_button(**kwargs)
-        else:
-            raise UnknownButtonError(button)
-
-    @classmethod
-    def hold_mouse_button(cls, button, **kwargs):
-        if button == 0:
-            cls.hold_left_button(**kwargs)
-        elif button == 1:
-            cls.hold_right_button(**kwargs)
-        elif button == 2:
-            cls.hold_middle_button(**kwargs)
-        else:
-            raise UnknownButtonError(button)
-
-    @classmethod
-    def release_mouse_button(cls, button, **kwargs):
-        if button == 0:
-            cls.release_left_button(**kwargs)
-        elif button == 1:
-            cls.release_right_button(**kwargs)
-        elif button == 2:
-            cls.release_middle_button(**kwargs)
-        else:
-            raise UnknownButtonError(button)
-
-
-class KeyboardButton(object):
-    lowercase_letters = string.ascii_lowercase
-    uppercase_letters = string.ascii_uppercase
-    characters_that_are_letters = lowercase_letters + uppercase_letters
-    shift_map_letter_characters = dict(zip(lowercase_letters, uppercase_letters))
-    shift_map_number_row_characters = {
-        '`': '~',
-        '1': '!',
-        '2': '@',
-        '3': '#',
-        '4': '$',
-        '5': '%',
-        '6': '^',
-        '7': '&',
-        '8': '*',
-        '9': '(',
-        '0': ')',
-        '-': '_',
-        '=': '+',
-    }
-    characters_that_are_numbers = shift_map_number_row_characters.keys() + shift_map_number_row_characters.values()
-    shift_map_punctuation_characters = {
-        '[': '{',
-        ']': '}',
-        ';': ':',
-        "'": '"',
-        '\\': '|',
-        ',': '<',
-        '.': '>',
-        '/': '?',
-    }
-    characters_that_are_punctuation = shift_map_punctuation_characters.keys() + \
-                                      shift_map_punctuation_characters.values()
-    characters_requiring_shift = shift_map_letter_characters.values() + \
-                                 shift_map_number_row_characters.values() + \
-                                 shift_map_punctuation_characters.values()
-
-    @classmethod
-    def character_to_key_name(cls, character):
-        """get the key_name of the keyboard button that maps to this character"""
-        if character == " ":
-            key_name = "space"
-        elif character == "`" or character == "~":
-            key_name = KeyboardButton.accent
-        elif character in cls.characters_that_are_numbers:
-            key_name = "num" + character
-        elif character == "-" or character == "_":
-            key_name = "dash"
-        elif character == "=" or character == "+":
-            key_name = "equals"
-        elif character in cls.characters_that_are_letters:
-            key_name = character.lower()
-        elif character == "[" or character == "{":
-            key_name = "openingsquarebracket"
-        elif character == "]" or character == "}":
-            key_name = "closingsquarebracket"
-        elif character == "\\" or character == "|":
-            key_name = "backslash"
-        elif character == ";" or character == ":":
-            key_name = "semicolon"
-        elif character == "'" or character == "\"":
-            key_name = "quote"
-        elif character == "," or character == "<":
-            key_name = "comma"
-        elif character == "." or character == ">":
-            key_name = "period"
-        elif character == "/" or character == "?":
-            key_name = "slash"
-        else:
-            raise UnknownKeyError(character)
-        return key_name
-
-    @classmethod
-    def character_requires_shift(cls, character):
-        return bool(character in cls.characters_requiring_shift)
-
+class KeyboardKey(object):
     cancel = 0x03
     backspace = 0x08
     tab = 0x09
@@ -379,7 +159,7 @@ class KeyboardButton(object):
     comma = 0xBC
     dash = 0xBD
     period = 0xBE
-    slash = 0xBF
+    forwardslash = 0xBF
     accent = 0xC0
     openingsquarebracket = 0xDB
     backslash = 0xDC
@@ -395,3 +175,229 @@ class MouseButton(object):
     left = 0
     right = 1
     middle = 2
+
+
+class VirtualInterface(object):
+    # press/release time delay_press
+    delay_hold = 0.01
+    delay_release = 0.01
+
+    @classmethod
+    def _delay_hold(cls, delay_hold):
+        delay = delay_hold or cls.delay_hold
+        time.sleep(delay)
+
+    @classmethod
+    def _delay_release(cls, delay_release):
+        delay = delay_release or cls.delay_release
+        time.sleep(delay)
+
+
+class VirtualKeyboard(VirtualInterface):
+
+    @classmethod
+    def hold_key(cls, key, **kwargs):
+        """Presses key"""
+        user32.keybd_event(key, 0, 0, 0)
+        cls._delay_hold(**kwargs)
+
+    @classmethod
+    def release_key(cls, key, **kwargs):
+        """Releases key"""
+        user32.keybd_event(key, 0, 2, 0)
+        cls._delay_release(**kwargs)
+
+    @classmethod
+    def press_key(cls, key, **kwargs):
+        """Presses and releases the key"""
+        cls.hold_key(key, **kwargs)
+        cls.release_key(key, **kwargs)
+
+    @classmethod
+    def shift_press_key(cls, key, **kwargs):
+        """Presses a key while shift is held down"""
+        cls.hold_key(KeyboardKey.shift, **kwargs)
+        cls.press_key(key, **kwargs)
+        cls.release_key(KeyboardKey.shift, **kwargs)
+
+    @classmethod
+    def type_character(cls, character, **kwargs):
+        """type the character using the virtual keyboard"""
+        use_shift = KeyboardCharacters.character_requires_shift(character)
+        key_to_press = KeyboardCharacters.character_to_key_name(character)
+        if use_shift:
+            cls.shift_press_key(key_to_press, **kwargs)
+        else:
+            cls.press_key(key_to_press, **kwargs)
+
+    @classmethod
+    def type_sequence(cls, sequence, **kwargs):
+        """type out a sequence of characters using the virtual keyboard"""
+        for character in sequence:
+            cls.type_character(character, **kwargs)
+
+
+class VirtualMouse(VirtualInterface):
+
+    @classmethod
+    def set_mouse_to_position(cls, x, y):
+        user32.SetCursorPos(x, y)
+
+    @classmethod
+    def click_left_button(cls, **kwargs):
+        cls.hold_left_button(**kwargs)
+        cls.release_left_button(**kwargs)
+
+    @classmethod
+    def click_right_button(cls, **kwargs):
+        cls.hold_right_button(**kwargs)
+        cls.release_right_button(**kwargs)
+
+    @classmethod
+    def click_middle_button(cls, **kwargs):
+        cls.hold_middle_button(**kwargs)
+        cls.release_middle_button(**kwargs)
+
+    @classmethod
+    def hold_left_button(cls, **kwargs):
+        user32.mouse_event(0x0002, 0, 0, 0, 0)
+        cls._delay_hold(**kwargs)
+
+    @classmethod
+    def hold_right_button(cls, **kwargs):
+        user32.mouse_event(0x0008, 0, 0, 0, 0)
+        cls._delay_hold(**kwargs)
+
+    @classmethod
+    def hold_middle_button(cls, **kwargs):
+        user32.mouse_event(0x00020, 0, 0, 0, 0)
+        cls._delay_hold(**kwargs)
+
+    @classmethod
+    def release_left_button(cls, **kwargs):
+        user32.mouse_event(0x0004, 0, 0, 0, 0)
+        cls._delay_release(**kwargs)
+
+    @classmethod
+    def release_right_button(cls, **kwargs):
+        user32.mouse_event(0x00010, 0, 0, 0, 0)
+        cls._delay_release(**kwargs)
+
+    @classmethod
+    def release_middle_button(cls, **kwargs):
+        user32.mouse_event(0x00040, 0, 0, 0, 0)
+        cls._delay_release(**kwargs)
+
+    @classmethod
+    def click_mouse_button(cls, button, **kwargs):
+        if button == MouseButton.left:
+            cls.click_left_button(**kwargs)
+        elif button == MouseButton.right:
+            cls.click_right_button(**kwargs)
+        elif button == MouseButton.middle:
+            cls.click_middle_button(**kwargs)
+        else:
+            raise UnknownButtonError(button)
+
+    @classmethod
+    def hold_mouse_button(cls, button, **kwargs):
+        if button == 0:
+            cls.hold_left_button(**kwargs)
+        elif button == 1:
+            cls.hold_right_button(**kwargs)
+        elif button == 2:
+            cls.hold_middle_button(**kwargs)
+        else:
+            raise UnknownButtonError(button)
+
+    @classmethod
+    def release_mouse_button(cls, button, **kwargs):
+        if button == 0:
+            cls.release_left_button(**kwargs)
+        elif button == 1:
+            cls.release_right_button(**kwargs)
+        elif button == 2:
+            cls.release_middle_button(**kwargs)
+        else:
+            raise UnknownButtonError(button)
+
+
+class KeyboardCharacters(object):
+    lowercase_letters = string.ascii_lowercase
+    uppercase_letters = string.ascii_uppercase
+    characters_that_are_letters = lowercase_letters + uppercase_letters
+    shift_map_letter_characters = dict(zip(lowercase_letters, uppercase_letters))
+    shift_map_numbers = {
+        '1': '!',
+        '2': '@',
+        '3': '#',
+        '4': '$',
+        '5': '%',
+        '6': '^',
+        '7': '&',
+        '8': '*',
+        '9': '(',
+        '0': ')',
+    }
+    characters_that_are_numbers = shift_map_numbers.keys() + shift_map_numbers.values()
+    shift_map_punctuation_characters = {
+        '`': '~',   # accent
+        '-': '_',   # dash
+        '=': '+',   # equals
+        '[': '{',   # openingsquarebracket
+        ']': '}',   # closingsquarebracket
+        ';': ':',   # semicolon
+        "'": '"',   # quote
+        '\\': '|',  # backslash
+        ',': '<',   # comma
+        '.': '>',   # period
+        '/': '?',   # forwardslash
+    }
+    characters_that_are_punctuation = shift_map_punctuation_characters.keys() + \
+                                      shift_map_punctuation_characters.values()
+    characters_requiring_shift = shift_map_letter_characters.values() + \
+                                 shift_map_numbers.values() + \
+                                 shift_map_punctuation_characters.values()
+    # map to key names for special characters
+    map_key_to_punctuation_characters = {
+        KeyboardKey.space: [' '],
+        KeyboardKey.accent: ['`', '~'],
+
+        KeyboardKey.dash: ['-', '_'],
+        KeyboardKey.equals: ['=', '+'],
+
+        KeyboardKey.openingsquarebracket: ['[', '{'],
+        KeyboardKey.closingsquarebracket: [']', '}'],
+
+        KeyboardKey.semicolon: [';', ':'],
+        KeyboardKey.quote: ["'", '"'],
+        KeyboardKey.backslash: ['\\', '|'],
+
+        KeyboardKey.comma: [',', '<'],
+        KeyboardKey.period: ['.', '>'],
+        KeyboardKey.forwardslash: ['/', '?'],
+
+    }
+
+    @classmethod
+    def character_to_key_name(cls, character):
+        """get the key_name of the keyboard button that maps to this character"""
+        if character in cls.characters_that_are_numbers:
+            key_name = 'num{}'.format(cls.shift_map_numbers.get(character, character))
+            return cls.get_key(key_name)
+        elif character in cls.characters_that_are_letters:
+            key_name = character.lower()
+            return cls.get_key(key_name)
+        else:
+            for key, punctuations in cls.map_key_to_punctuation_characters.items():
+                if character in punctuations:
+                    return key
+        raise UnknownKeyError(character)
+
+    @classmethod
+    def character_requires_shift(cls, character):
+        return bool(character in cls.characters_requiring_shift)
+
+    @classmethod
+    def get_key(cls, key_name):
+        return getattr(KeyboardKey, key_name)
