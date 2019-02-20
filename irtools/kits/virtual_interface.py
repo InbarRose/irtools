@@ -1,8 +1,16 @@
-# --- Setup --- #
+# Standard Imports
 import ctypes
 import string
 import time
 
+# irtools Imports
+from irtools import *
+
+# External Imports
+
+log = logging.getLogger('irtools.kits.virtual_interface')
+
+# convenience
 user32 = ctypes.windll.user32
 
 
@@ -183,12 +191,12 @@ class VirtualInterface(object):
     delay_release = 0.01
 
     @classmethod
-    def _delay_hold(cls, delay_hold):
+    def _delay_hold(cls, delay_hold=None):
         delay = delay_hold or cls.delay_hold
         time.sleep(delay)
 
     @classmethod
-    def _delay_release(cls, delay_release):
+    def _delay_release(cls, delay_release=None):
         delay = delay_release or cls.delay_release
         time.sleep(delay)
 
@@ -382,17 +390,30 @@ class KeyboardCharacters(object):
         KeyboardKey.tab: ['\t'],
         KeyboardKey.enter: ['\n'],
     }
+    map_key_to_number_characters = {
+        KeyboardKey.num1: ['1', '!'],
+        KeyboardKey.num2: ['2', '@'],
+        KeyboardKey.num3: ['3', '#'],
+        KeyboardKey.num4: ['4', '$'],
+        KeyboardKey.num5: ['5', '%'],
+        KeyboardKey.num6: ['6', '^'],
+        KeyboardKey.num7: ['7', '&'],
+        KeyboardKey.num8: ['8', '*'],
+        KeyboardKey.num9: ['9', '('],
+        KeyboardKey.num0: ['0', ')'],
+    }
 
     @classmethod
     def character_to_key_name(cls, character):
         """get the key_name of the keyboard button that maps to this character"""
         assert character in string.printable
-        if character in cls.characters_that_are_numbers:
-            key_name = 'num{}'.format(cls.shift_map_numbers.get(character, character))
-            return cls.get_key(key_name)
-        elif character in cls.characters_that_are_letters:
+        if character in cls.characters_that_are_letters:
             key_name = character.lower()
             return cls.get_key(key_name)
+        elif character in cls.characters_that_are_numbers:
+            for key, numbers in cls.map_key_to_number_characters.items():
+                if character in numbers:
+                    return key
         elif character in cls.characters_that_are_punctuation:
             for key, punctuations in cls.map_key_to_punctuation_characters.items():
                 if character in punctuations:
