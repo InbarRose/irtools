@@ -47,3 +47,29 @@ class TestWait(unittest.TestCase):
                                     no_fail=True, log_trace=True, raise_on_timeout=False)
         waiter.wait()
         self.assertEquals(wait_utils.WaitStatus.timeout, waiter.status)
+
+    def test_wait_until(self):
+        dt_start = datetime.datetime.now()
+        dt_in_2_seconds = dt_start + datetime.timedelta(seconds=2)
+        wait_utils.wait_until_datetime(dt_in_2_seconds)
+        dt_end = datetime.datetime.now()
+        duration = dt_end - dt_start
+        self.assertAlmostEqual(
+            (dt_in_2_seconds - datetime.datetime(1970, 1, 1)).total_seconds(),
+            (dt_end - datetime.datetime(1970, 1, 1)).total_seconds(),
+            delta=1
+        )
+        self.assertAlmostEqual(2, duration.total_seconds(), places=2)
+
+    def test_sleep_until(self):
+        dt_start = datetime.datetime.now()
+        dt_in_2_seconds = dt_start + datetime.timedelta(seconds=2)
+        wait_utils.sleep_until_datetime(dt_in_2_seconds)
+        dt_end = datetime.datetime.now()
+        duration = dt_end - dt_start
+        self.assertAlmostEqual(
+            (dt_in_2_seconds - datetime.datetime(1970, 1, 1)).total_seconds(),
+            (dt_end - datetime.datetime(1970, 1, 1)).total_seconds(),
+            delta=1
+        )
+        self.assertAlmostEqual(2, duration.total_seconds(), places=2)

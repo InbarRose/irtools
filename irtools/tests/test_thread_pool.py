@@ -28,7 +28,7 @@ class TestThreadPool(unittest.TestCase):
         pool = thread_pool.ThreadPool(5)
 
         # Generate random delays
-        delays = [randrange(3, 7) for _ in range(50)]
+        delays = [randrange(1, 3) for _ in range(50)]
 
         log.debug('mapping to thread pool, starting')
         pool.map(self.wait_delay, delays)
@@ -52,7 +52,7 @@ class TestThreadPool(unittest.TestCase):
         # Generate random delays
         log.debug('adding tasks to thread pool, starting')
         for _ in range(50):
-            pool.add_task(self.wait_delay, randrange(3, 7))
+            pool.add_task(self.wait_delay, randrange(1, 3))
         log.debug('adding tasks to thread pool, finished')
 
         self.assertEquals(50, pool._total_task_count)

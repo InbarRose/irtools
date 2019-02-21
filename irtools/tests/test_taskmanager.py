@@ -247,3 +247,17 @@ class TestTaskManager(unittest.TestCase):
         self.assertEquals(0, tm.worst_rc)
         expected_task_rcs = {'task1': 0, 'task2': 0, 'task3': 0, 'sub': 0}
         self.assertEquals(expected_task_rcs, tm.task_rcs)
+
+    def test_wait_timeout(self):
+        tm = taskmanager.TaskManager('test_wait_timeout')
+        tm.add_task(taskmanager.Task(name='sleep_10', func=time.sleep, fargs=[10]))
+        tm.go_no_wait()
+        r = tm.wait(timeout=2, raise_on_timeout=False, return_wait_status=True)
+        self.assertEquals(utils.WaitStatus.timeout, r)
+
+    def test_wait(self):
+        tm = taskmanager.TaskManager('test_wait')
+        tm.add_task(taskmanager.Task(name='sleep_2', func=time.sleep, fargs=[2]))
+        tm.go_no_wait()
+        r = tm.wait(raise_on_timeout=False, return_wait_status=True)
+        self.assertEquals(utils.WaitStatus.ready, r)

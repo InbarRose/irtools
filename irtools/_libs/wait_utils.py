@@ -89,7 +89,7 @@ class WaitLib(object):
             parts.append('timeout={}'.format(self.timeout))
         return parts
 
-    def _check_timeout(self):
+    def _check_timeout_valid(self):
         if isinstance(self.timeout, datetime.datetime):
             # timeout given as a datetime (should be in the future) convert to seconds
             log.debug('wait converting datetime timeout to seconds: {}'.format(self.wait_id))
@@ -108,7 +108,7 @@ class WaitLib(object):
             )
 
     def wait(self):
-        self._check_timeout()
+        self._check_timeout_valid()
         if self.log_process:
             log.info('wait Starting: {}'.format(self.wait_id))
         self.start_time = time.time()
@@ -411,9 +411,42 @@ def wait_for_files_to_exist(*files, **kwargs):
     return WaitLib(ready_method=check_paths_exist, **kwargs).wait()
 
 
+def wait_until_datetime(dt_wait, **kwargs):
+    """
+    sleep until a given datetime
+    :param dt_wait: the datetime to wait for
+    :param kwargs: kwargs for waitlib
+    :return:
+    """
+    assert isinstance(dt_wait, datetime.datetime)
+    dt_now = datetime.datetime.now()
+    assert dt_wait > dt_now, 'wait time is in the past'
+
+    def check_datetime_reached(datetime_to_reach=dt_wait):
+        return bool(datetime.datetime.now() > datetime_to_reach)
+
+    return WaitLib(ready_method=check_datetime_reached, **kwargs).wait()
+
+
+def sleep_until_datetime(dt_wait):
+    """
+    sleep until a given datetime
+    :param dt_wait: the datetime to wait for
+    :return:
+    """
+    assert isinstance(dt_wait, datetime.datetime)
+    dt_now = datetime.datetime.now()
+    assert dt_wait > dt_now, 'wait time is in the past'
+    td_for_wait = dt_wait - dt_now
+    wait_time = td_for_wait.total_seconds()
+    log.debug('waiting until datetime: timedelta={} seconds={}'.format(td_for_wait, wait_time))
+    time.sleep(wait_time)
+
+
 __all__ = [
     'wait_for_callback', 'wait_for_callback_value',
     'wait_for_ready_or_fail',
     'wait_for_files_to_exist',
-    'wait', 'WaitStatus'
+    'wait', 'WaitStatus',
+    'sleep_until_datetime', 'wait_until_datetime',
 ]

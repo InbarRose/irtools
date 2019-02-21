@@ -94,6 +94,7 @@ def seconds_to_future(dt_future, dt_now=None, round_up=True, raise_on_past=True)
     :param raise_on_past: should we raise an exception if future datetime is in the past
     :return:
     """
+    dt_now = dt_now or datetime.datetime.now()
     seconds = get_timedelta_from_now(dt_future, dt_now, in_seconds=True)
     if seconds > 0:
         if round_up:

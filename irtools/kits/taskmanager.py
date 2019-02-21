@@ -539,6 +539,13 @@ class AbstractTaskManager(object):
         """trigger the TaskManager without waiting for its completion, not the normal way of running a TaskManager"""
         self.go()
 
+    def wait(self, timeout=None, **kwargs):
+        """
+        wait for the taskmanager to finish,
+        if timeout is given and reached - waiting will stop but taskmanager will not
+        """
+        return utils.wait_for_callback_value(lambda: self.finished, True, timeout=timeout, **kwargs)
+
     def go(self):
         """Trigger the TaskManager, this is the main way to start a TaskManager"""
         self._prepare()
