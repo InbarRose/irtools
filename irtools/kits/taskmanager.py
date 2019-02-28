@@ -2,7 +2,6 @@
 
 #  Standard Imports
 import time
-from optparse import OptionParser
 from collections import OrderedDict
 from threading import Thread
 
@@ -309,6 +308,10 @@ class AbstractTask(object):
     def __str__(self):
         """representing the Task object as a string"""
         return self.log_display
+
+    def __repr__(self):
+        """representing the Task object as a string"""
+        return str(self)
 
 
 class RCTask(AbstractTask):
@@ -759,6 +762,11 @@ class RCTaskManager(AbstractTaskManager):
         """returns a dictionary of all task names and their rc"""
         return {task_name: task.rc for task_name, task in self._iter_tasks()}
 
+    def go(self):
+        """Trigger the TaskManager, this is the main way to start a TaskManager"""
+        super(RCTaskManager, self).go()
+        return self.worst_rc
+
 
 class OrderedTaskManager(RCTaskManager):
 
@@ -811,11 +819,6 @@ class OrderedTaskManager(RCTaskManager):
     def _announce_finishing(self):
         """announce the TaskManager is finishing"""
         self.announce(log.info, self.msg_finishing, time=int(self.duration), worst_rc=self.worst_rc)
-
-    def go(self):
-        """Trigger the TaskManager, this is the main way to start a TaskManager"""
-        super(OrderedTaskManager, self).go()
-        return self.worst_rc
 
     def _iter_tasks(self):
         """yields all active tasks in the task dict"""
