@@ -2,7 +2,6 @@
 
 #  Standard Imports
 import time
-from optparse import OptionParser
 from collections import OrderedDict
 from threading import Thread
 
@@ -83,6 +82,7 @@ class AbstractTask(object):
         self.elapsed_time = 0
         self.was_run = False
         self.operating = False
+        self.triggered = False  # flag for manager to use
         self.finished = False
         self.thread = None
 
@@ -179,6 +179,7 @@ class AbstractTask(object):
         :param dry_run:
         :return:
         """
+        self.triggered = True
         if self.operating:
             raise TaskException('Task already operating', self)
         t = Thread(target=self.go_wait, args=[dry_run])
@@ -229,6 +230,7 @@ class AbstractTask(object):
         the actual go function, this should never be called directly when operating normally
         Runs the function and checks rc and makes announcements, handles cleanup and exceptions
         """
+        self.triggered = True
         self._start()
         try:
             if not dry_run:
@@ -309,6 +311,10 @@ class AbstractTask(object):
     def __str__(self):
         """representing the Task object as a string"""
         return self.log_display
+
+    def __repr__(self):
+        """representing the Task object as a string"""
+        return str(self)
 
 
 class RCTask(AbstractTask):
@@ -459,6 +465,7 @@ class AbstractTaskManager(object):
         self.run_tasks_as_daemons = kwargs.pop('run_tasks_as_daemons', False)
         self.stop_running_tasks_on_halt = kwargs.pop('stop_running_tasks_on_halt', False)
         self.report_still_running_tasks = kwargs.pop('report_still_running_tasks', True)
+        self.task_throttle = kwargs.pop('task_throttle', False)
 
         # store extra kwargs
         self.kwargs = kwargs
@@ -608,7 +615,10 @@ class AbstractTaskManager(object):
 
     def _operating_start_new_tasks(self):
         """while operating we should start new tasks when they are ready"""
-        for task_name in sorted(self._get_ready_tasks()):
+        tasks_to_start = sorted(self._get_ready_tasks())
+        if self.task_throttle:
+            tasks_to_start = tasks_to_start[:self.task_throttle]
+        for task_name in tasks_to_start:
             self.handle_start_new_task(task_name)
 
     def handle_start_new_task(self, task_name):
@@ -688,6 +698,9 @@ class AbstractTaskManager(object):
             # we will iterate all the tasks,
             # and each task which we can detect is not ready we will skip (continue)
             # that way only the tasks that are ready now will be yielded
+            # there is some overlap on these conditions, provided here to ensure that we don't run tasks twice
+            if task.triggered:
+                continue  # it's already been triggered
             if task.operating:
                 continue  # it's already running
             if task.finished:
@@ -759,6 +772,11 @@ class RCTaskManager(AbstractTaskManager):
         """returns a dictionary of all task names and their rc"""
         return {task_name: task.rc for task_name, task in self._iter_tasks()}
 
+    def go(self):
+        """Trigger the TaskManager, this is the main way to start a TaskManager"""
+        super(RCTaskManager, self).go()
+        return self.worst_rc
+
 
 class OrderedTaskManager(RCTaskManager):
 
@@ -811,11 +829,6 @@ class OrderedTaskManager(RCTaskManager):
     def _announce_finishing(self):
         """announce the TaskManager is finishing"""
         self.announce(log.info, self.msg_finishing, time=int(self.duration), worst_rc=self.worst_rc)
-
-    def go(self):
-        """Trigger the TaskManager, this is the main way to start a TaskManager"""
-        super(OrderedTaskManager, self).go()
-        return self.worst_rc
 
     def _iter_tasks(self):
         """yields all active tasks in the task dict"""
