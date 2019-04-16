@@ -261,3 +261,18 @@ class TestTaskManager(unittest.TestCase):
         tm.go_no_wait()
         r = tm.wait(raise_on_timeout=False, return_wait_status=True)
         self.assertEquals(utils.WaitStatus.ready, r)
+
+    def test_throttle(self):
+        # if we started all tasks at once, we should be done in 2 seconds,
+        # since we only start one at a time, then it should take longer
+        tm = taskmanager.TaskManager('test_throttle', task_throttle=1)
+        tm.add_task(taskmanager.Task(name='sleep_2_a', func=time.sleep, fargs=[2]))
+        tm.add_task(taskmanager.Task(name='sleep_2_b', func=time.sleep, fargs=[2]))
+        tm.add_task(taskmanager.Task(name='sleep_2_c', func=time.sleep, fargs=[2]))
+        tm.add_task(taskmanager.Task(name='sleep_2_d', func=time.sleep, fargs=[2]))
+        tm.add_task(taskmanager.Task(name='sleep_2_e', func=time.sleep, fargs=[2]))
+        tm.go()
+        self.assertLessEqual(1, tm.tasks['sleep_2_b'].start_time - tm.tasks['sleep_2_a'].start_time)
+        self.assertLessEqual(1, tm.tasks['sleep_2_c'].start_time - tm.tasks['sleep_2_b'].start_time)
+        self.assertLessEqual(1, tm.tasks['sleep_2_d'].start_time - tm.tasks['sleep_2_c'].start_time)
+        self.assertLessEqual(1, tm.tasks['sleep_2_e'].start_time - tm.tasks['sleep_2_d'].start_time)
