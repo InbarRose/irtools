@@ -425,6 +425,8 @@ def wait_until_datetime(dt_wait, **kwargs):
     def check_datetime_reached(datetime_to_reach=dt_wait):
         return bool(datetime.datetime.now() > datetime_to_reach)
 
+    # by default, should not be any timeout. we should simply be ready by the datetime. add 120 seconds buffer
+    kwargs.setdefault('timeout', dt_wait + datetime.timedelta(seconds=120))
     return WaitLib(ready_method=check_datetime_reached, **kwargs).wait()
 
 
