@@ -648,7 +648,14 @@ class AbstractTaskManager(object):
         if self.report_still_running_tasks:
             currently_running_tasks = self._get_running_tasks()
             if currently_running_tasks:
-                self.announce(log.debug, self.msg_tasks_still_running, still_running=currently_running_tasks)
+                self._announce_tasks_still_running(currently_running_tasks)
+
+    def _announce_tasks_still_running(self, currently_running_tasks):
+        task_count_all = len(self.tasks)
+        task_count_started = len(self._get_started_tasks())
+        task_count_finished = len(self._get_finished_tasks())
+        progress = '{}/{}/{}'.format(task_count_finished, task_count_started, task_count_all)
+        self.announce(log.debug, self.msg_tasks_still_running, still_running=currently_running_tasks, progress=progress)
 
     def handle_operating_loop_halted(self):
         """what happens when operating=False during the main loop"""
@@ -673,9 +680,20 @@ class AbstractTaskManager(object):
         """gets all the task names of all tasks that are finished"""
         return [task_name for task_name, task in self._iter_finished_tasks()]
 
+    def _get_started_tasks(self):
+        """gets all the task names of all tasks that are finished"""
+        return [task_name for task_name, task in self._iter_started_tasks()]
+
     def _iter_tasks(self):
         """yields all tasks in the task dict"""
         for task_name, task in self.tasks.items():
+            yield task_name, task
+
+    def _iter_started_tasks(self):
+        """yields all the tasks which are started"""
+        for task_name, task in self._iter_tasks():
+            if not task.triggered:
+                continue
             yield task_name, task
 
     def _iter_finished_tasks(self):
