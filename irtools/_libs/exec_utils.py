@@ -10,6 +10,8 @@ import itertools
 import multiprocessing
 from datetime import datetime
 from collections import OrderedDict
+from threading import Thread
+from Queue import Queue, Empty
 
 # Lib Imports
 from file_utils import write_file, read_file, get_tmp_dir
@@ -358,21 +360,48 @@ def iexec(cmd, **kwargs):
                 _write_to_stderr(stderr_line)
             rc = proc.wait()
         else:
+            def _enqueue_stream(stream, queue):
+                for line in iter(stream.readline, b''):
+                    queue.put(line)
+                stream.close()
+
+            qo = Queue()
+            to = Thread(target=_enqueue_stream, args=(proc.stdout, qo))
+            to.daemon = True  # thread dies with the program
+            to.start()
+
+            qe = Queue()
+            te = Thread(target=_enqueue_stream, args=(proc.stderr, qe))
+            te.daemon = True  # thread dies with the program
+            te.start()
+
             while True:
-                stdout_line = proc.stdout.readline()
-                if stdout_line:
+                try:
+                    stdout_line = qo.get_nowait()  # or q.get(timeout=.1)
+                except Empty:
+                    pass
+                else:
                     _write_to_stdout(stdout_line)
                     sys.stdout.flush()
-                stderr_line = proc.stderr.readline()
-                if stderr_line:
+                try:
+                    stderr_line = qe.get_nowait()  # or q.get(timeout=.1)
+                except Empty:
+                    pass
+                else:
                     _write_to_stderr(stderr_line)
                     sys.stderr.flush()
 
                 rc = proc.poll()
                 if rc is not None:
                     # finished proc, read all the rest of the lines from the buffer
-                    stdout_buffer = proc.stdout.readlines()
-                    stderr_buffer = proc.stderr.readlines()
+                    try:
+                        stdout_buffer = proc.stdout.readlines()
+                    except ValueError:
+                        stdout_buffer = []
+                    try:
+                        stderr_buffer = proc.stderr.readlines()
+                    except ValueError:
+                        stderr_buffer = []
                     if redirect_output:
                         stdout_buffer = read_file(redirect_file_name)
                     for stdout_line in stdout_buffer:
