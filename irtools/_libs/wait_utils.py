@@ -411,6 +411,50 @@ def wait_for_files_to_exist(*files, **kwargs):
     return WaitLib(ready_method=check_paths_exist, **kwargs).wait()
 
 
+def wait_for_all(*condition_callbacks, **kwargs):
+    """
+    wait for all conditions to be truthy
+    :param condition_callbacks: callback functions to check for readiness
+    :param kwargs: kwargs for waitlib
+    :return:
+    """
+
+    def check_all_conditions(conditions=condition_callbacks):
+        return all([condition() for condition in conditions])
+
+    return WaitLib(ready_method=check_all_conditions, **kwargs).wait()
+
+
+def wait_for_any(*condition_callbacks, **kwargs):
+    """
+    wait for any conditions to be truthy
+    :param condition_callbacks: callback functions to check for readiness
+    :param kwargs: kwargs for waitlib
+    :return:
+    """
+
+    def check_any_conditions(conditions=condition_callbacks):
+        return any([condition() for condition in conditions])
+
+    return WaitLib(ready_method=check_any_conditions, **kwargs).wait()
+
+
+def wait_for_any_n(*condition_callbacks, **kwargs):
+    """
+    wait for any n conditions to be truthy
+    :param condition_callbacks: callback functions to check for readiness
+    :param kwargs: kwargs for waitlib
+    :return:
+    """
+    n = kwargs.pop('n', 2)
+    assert isinstance(n, int) and n >= 1, n
+
+    def check_any_n_conditions(conditions=condition_callbacks):
+        return bool(len(filter(None, [condition() for condition in conditions])) == n)
+
+    return WaitLib(ready_method=check_any_n_conditions, **kwargs).wait()
+
+
 def wait_until_datetime(dt_wait, **kwargs):
     """
     sleep until a given datetime
@@ -425,6 +469,8 @@ def wait_until_datetime(dt_wait, **kwargs):
     def check_datetime_reached(datetime_to_reach=dt_wait):
         return bool(datetime.datetime.now() > datetime_to_reach)
 
+    # by default, should not be any timeout. we should simply be ready by the datetime. add 120 seconds buffer
+    kwargs.setdefault('timeout', dt_wait + datetime.timedelta(seconds=120))
     return WaitLib(ready_method=check_datetime_reached, **kwargs).wait()
 
 

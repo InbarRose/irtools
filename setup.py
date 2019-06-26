@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="py-irtools",
-    version="1.0.7",
+    version="1.0.8",
     author="Inbar Rose",
     author_email="inbar.rose1@gmail.com",
     description="A package with useful tools",

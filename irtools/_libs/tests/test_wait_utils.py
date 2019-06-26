@@ -15,6 +15,10 @@ log = logging.getLogger('irtools.lib_tests.wait_utils')
 utils.logging_setup(level=0, log_file=ir_log_dir + '/test_lib_wait_utils.log')
 
 
+def gen_time_passed_since_time_func(since, passed):
+    return lambda: bool(time.time() - since > passed)
+
+
 class TestWait(unittest.TestCase):
 
     def test_wait_callable(self):
@@ -73,3 +77,51 @@ class TestWait(unittest.TestCase):
             delta=1
         )
         self.assertAlmostEqual(2, duration.total_seconds(), places=2)
+
+    def test_wait_for_all(self):
+        start = time.time()
+        conditions = [
+            gen_time_passed_since_time_func(start, 0.1),
+            gen_time_passed_since_time_func(start, 0.5),
+            gen_time_passed_since_time_func(start, 1.0),
+            gen_time_passed_since_time_func(start, 1.2),
+            gen_time_passed_since_time_func(start, 1.7),
+            gen_time_passed_since_time_func(start, 2.0),
+        ]
+        r = wait_utils.wait_for_all(*conditions, period=0.1)
+        end = time.time()
+        self.assertTrue(r)
+        self.assertLessEqual(2, end-start)
+        self.assertListEqual([True] * 6, [c() for c in conditions[:]])
+
+    def test_wait_for_any(self):
+        start = time.time()
+        conditions = [
+            gen_time_passed_since_time_func(start, 0.1),
+            gen_time_passed_since_time_func(start, 0.5),
+            gen_time_passed_since_time_func(start, 1.0),
+            gen_time_passed_since_time_func(start, 1.2),
+            gen_time_passed_since_time_func(start, 1.7),
+            gen_time_passed_since_time_func(start, 2.0),
+        ]
+        r = wait_utils.wait_for_any(*conditions, period=0.1)
+        end = time.time()
+        self.assertTrue(r)
+        self.assertLessEqual(0.1, end-start)
+        self.assertListEqual([False]*5, [c() for c in conditions[1:]])
+
+    def test_wait_for_any_n(self):
+        start = time.time()
+        conditions = [
+            gen_time_passed_since_time_func(start, 0.1),
+            gen_time_passed_since_time_func(start, 0.5),
+            gen_time_passed_since_time_func(start, 1.0),
+            gen_time_passed_since_time_func(start, 1.2),
+            gen_time_passed_since_time_func(start, 1.7),
+            gen_time_passed_since_time_func(start, 2.0),
+        ]
+        r = wait_utils.wait_for_any_n(*conditions, n=3, period=0.1)
+        end = time.time()
+        self.assertTrue(r)
+        self.assertLessEqual(1.0, end-start)
+        self.assertListEqual([True]*3 + [False]*3, [c() for c in conditions[:]])
