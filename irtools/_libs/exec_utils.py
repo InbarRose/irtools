@@ -395,19 +395,23 @@ def iexec(cmd, **kwargs):
                 if rc is not None:
                     # finished proc, read all the rest of the lines from the buffer
                     try:
-                        stdout_buffer = proc.stdout.readlines()
-                    except ValueError:
-                        stdout_buffer = []
+                        while True:
+                            stdout_line = qo.get_nowait()  # or q.get(timeout=.1)
+                            _write_to_stdout(stdout_line)
+                            sys.stdout.flush()
+                    except Empty:
+                        pass
                     try:
-                        stderr_buffer = proc.stderr.readlines()
-                    except ValueError:
-                        stderr_buffer = []
+                        while True:
+                            stderr_line = qe.get_nowait()  # or q.get(timeout=.1)
+                            _write_to_stderr(stderr_line)
+                            sys.stderr.flush()
+                    except Empty:
+                        pass
                     if redirect_output:
                         stdout_buffer = read_file(redirect_file_name)
-                    for stdout_line in stdout_buffer:
-                        _write_to_stdout(stdout_line)
-                    for stderr_line in stderr_buffer:
-                        _write_to_stderr(stderr_line)
+                        for stdout_line in stdout_buffer:
+                            _write_to_stdout(stdout_line)
                     break
     else:
         reads = [proc.stdout.fileno(), proc.stderr.fileno()]
