@@ -2,6 +2,7 @@
 
 # Standard Imports
 import unittest
+import time
 
 # irtools Imports
 from irtools import *
@@ -84,3 +85,29 @@ class Testiexec(unittest.TestCase):
         # verify subprocess kwargs NOT in dump file
         dump_file_contents = utils.read_file(tmp_file, as_str=True)
         self.assertNotIn(expected_kwargs_dump, dump_file_contents)
+
+    def test_streaming_command(self):
+        """a test to see that the output from a command is streamed in ~real-time"""
+        out_lines_with_timestamp = []
+
+        def alt_out(contents):
+            out_lines_with_timestamp.append({'timestamp': time.time(), 'contents': contents})
+
+        # build a command that will take some time, and will stream during its process
+        if running_on_windows:
+            cmd = 'ping -n 10 localhost'
+        else:
+            cmd = 'ping -c 10 localhost'
+        ret = exec_utils.iexec(cmd, alt_out=alt_out, to_console=False)
+        self.assertTrue(ret.good)
+
+        # debug
+        tmp_file = os.path.join(utils.get_tmp_dir(), 'test_streaming_command.lines.csv')
+        utils.check_makedir(tmp_file)  # make sure path is clear for writing
+        utils.clean_paths(tmp_file)
+        utils.write_csv(tmp_file, out_lines_with_timestamp, ['timestamp', 'contents'])
+        log.trace('tmp_file: path={}'.format(tmp_file))
+
+        # test that we have at least some streaming
+        unique_timestamps = set([d['timestamp'] for d in out_lines_with_timestamp])
+        self.assertLess(1, len(unique_timestamps))

@@ -280,6 +280,7 @@ def iexec(cmd, **kwargs):
     alt_out = kwargs.pop('alt_out', None)
     alt_err = kwargs.pop('alt_err', alt_out)
     iexec_communicate = kwargs.pop('iexec_communicate', None)
+    iexec_communicate_input = kwargs.pop('iexec_communicate_input', None)
     dump_kwargs = kwargs.pop('dump_kwargs', False)
 
     if not isinstance(cmd, str):
@@ -348,17 +349,37 @@ def iexec(cmd, **kwargs):
 
     if running_on_windows:
         if iexec_communicate:
-            proc.communicate()
-            return
-        rc = proc.wait()
-        if redirect_output:
-            stdout = read_file(redirect_file_name)
+            stdout_buffer, stderr_buffer = proc.communicate(iexec_communicate_input)
+            if redirect_output:
+                stdout_buffer = read_file(redirect_file_name)
+            for stdout_line in stdout_buffer:
+                _write_to_stdout(stdout_line)
+            for stderr_line in stderr_buffer:
+                _write_to_stderr(stderr_line)
+            rc = proc.wait()
         else:
-            stdout = proc.stdout.readlines()
-        stderr = proc.stderr.readlines()
-        if to_console:
-            sys.stdout.writelines(stdout)
-            sys.stderr.writelines(stderr)
+            while True:
+                stdout_line = proc.stdout.readline()
+                if stdout_line:
+                    _write_to_stdout(stdout_line)
+                    sys.stdout.flush()
+                stderr_line = proc.stderr.readline()
+                if stderr_line:
+                    _write_to_stderr(stderr_line)
+                    sys.stderr.flush()
+
+                rc = proc.poll()
+                if rc is not None:
+                    # finished proc, read all the rest of the lines from the buffer
+                    stdout_buffer = proc.stdout.readlines()
+                    stderr_buffer = proc.stderr.readlines()
+                    if redirect_output:
+                        stdout_buffer = read_file(redirect_file_name)
+                    for stdout_line in stdout_buffer:
+                        _write_to_stdout(stdout_line)
+                    for stderr_line in stderr_buffer:
+                        _write_to_stderr(stderr_line)
+                    break
     else:
         reads = [proc.stdout.fileno(), proc.stderr.fileno()]
         while True:
@@ -366,21 +387,21 @@ def iexec(cmd, **kwargs):
 
             for fd in ret[0]:
                 if fd == proc.stdout.fileno():
-                    read = proc.stdout.readline()
-                    _write_to_stdout(read)
+                    stdout_line = proc.stdout.readline()
+                    _write_to_stdout(stdout_line)
                 if fd == proc.stderr.fileno():
-                    read = proc.stderr.readline()
-                    _write_to_stderr(read)
+                    stderr_line = proc.stderr.readline()
+                    _write_to_stderr(stderr_line)
 
             rc = proc.poll()
             if rc is not None:
                 # finished proc, read all the rest of the lines from the buffer
-                outs = proc.stdout.readlines()
-                for read in outs:
-                    _write_to_stdout(read)
-                errs = proc.stderr.readlines()
-                for read in errs:
-                    _write_to_stderr(read)
+                stdout_buffer = proc.stdout.readlines()
+                for stdout_line in stdout_buffer:
+                    _write_to_stdout(stdout_line)
+                stderr_buffer = proc.stderr.readlines()
+                for stderr_line in stderr_buffer:
+                    _write_to_stderr(stderr_line)
                 break
 
             if timeout and time.time() - start_time > timeout:
