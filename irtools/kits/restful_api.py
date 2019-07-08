@@ -20,7 +20,6 @@ class RestfulAPI(object):
     A class which wraps the process of sending restful API requests using the requests package
     conveniently logs all transactions for debugging and provides extendability
     """
-    # todo: support sessions
     # todo: add extendability and convenience
 
     # class constants
@@ -54,6 +53,7 @@ class RestfulAPI(object):
         self.base_url = base_url
         self.name = kwargs.pop('name', 'rest')
         self.log_rest_dir = kwargs.pop('log_rest_dir', os.path.join(self._cls_log_dir, self.name))
+        self.session = requests.session()
 
     @property
     def request_data_dir(self):
@@ -174,12 +174,16 @@ class RestfulAPI(object):
         ignore_request_timeout = kwargs.pop('ignore_request_timeout', False)
         ignore_connection_aborted = kwargs.pop('ignore_connection_aborted', False)
         log_action = kwargs.pop('log_action', True)
+        session = kwargs.pop('session', None)
         kwargs.setdefault('timeout', cls.request_timeout)
         log_kwargs, kwargs = cls._extract_log_kwargs(**kwargs)
         if log_action:
             log.debug('request.get: url={}'.format(url))
         try:
-            r = requests.get(url, **kwargs)
+            if session:
+                r = session.get(url, **kwargs)
+            else:
+                r = requests.get(url, **kwargs)
         except requests.ReadTimeout as exc:
             if ignore_request_timeout:
                 log.debug('Requests Timeout, ignored: url={} exc={}'.format(url, exc))
@@ -200,18 +204,23 @@ class RestfulAPI(object):
     def request_get(self, url, **kwargs):
         """sends a GET command using requests package"""
         self.__add_default_log_dirs_to_kwargs(kwargs)
+        kwargs.setdefault('session', self.session)
         return self._request_get(url, **kwargs)
 
     @classmethod
     def _request_post(cls, url, **kwargs):
         """sends a POST command using requests package"""
         log_action = kwargs.pop('log_action', True)
+        session = kwargs.pop('session', None)
         kwargs.setdefault('timeout', cls.request_timeout)
         log_kwargs, kwargs = cls._extract_log_kwargs(**kwargs)
         if log_action:
             log.debug('request.post: url={}'.format(url))
         try:
-            r = requests.post(url, **kwargs)
+            if session:
+                r = session.post(url, **kwargs)
+            else:
+                r = requests.post(url, **kwargs)
         except requests.RequestException as exc:
             log.error('requests post exception: exc={} url={}'.format(exc, url))
             raise
@@ -222,18 +231,23 @@ class RestfulAPI(object):
     def request_post(self, url, **kwargs):
         """sends a POST command using requests package"""
         self.__add_default_log_dirs_to_kwargs(kwargs)
+        kwargs.setdefault('session', self.session)
         return self._request_post(url, **kwargs)
 
     @classmethod
     def _request_put(cls, url, **kwargs):
         """sends a PUT command using requests package"""
         log_action = kwargs.pop('log_action', True)
+        session = kwargs.pop('session', None)
         kwargs.setdefault('timeout', cls.request_timeout)
         log_kwargs, kwargs = cls._extract_log_kwargs(**kwargs)
         if log_action:
             log.debug('request.put: url={}'.format(url))
         try:
-            r = requests.put(url, **kwargs)
+            if session:
+                r = session.put(url, **kwargs)
+            else:
+                r = requests.put(url, **kwargs)
         except requests.RequestException as exc:
             log.error('requests put exception: exc={} url={}'.format(exc, url))
             raise
@@ -244,18 +258,23 @@ class RestfulAPI(object):
     def request_put(self, url, **kwargs):
         """sends a PUT command using requests package"""
         self.__add_default_log_dirs_to_kwargs(kwargs)
+        kwargs.setdefault('session', self.session)
         return self._request_put(url, **kwargs)
 
     @classmethod
     def _request_delete(cls, url, **kwargs):
         """sends a DELETE command using requests package"""
         log_action = kwargs.pop('log_action', True)
+        session = kwargs.pop('session', None)
         kwargs.setdefault('timeout', cls.request_timeout)
         log_kwargs, kwargs = cls._extract_log_kwargs(**kwargs)
         if log_action:
             log.debug('request.delete: url={}'.format(url))
         try:
-            r = requests.delete(url, **kwargs)
+            if session:
+                r = session.delete(url, **kwargs)
+            else:
+                r = requests.delete(url, **kwargs)
         except requests.RequestException as exc:
             log.error('requests delete exception: exc={} url={}'.format(exc, url))
             raise
@@ -266,6 +285,7 @@ class RestfulAPI(object):
     def request_delete(self, url, **kwargs):
         """sends a DELETE command using requests package"""
         self.__add_default_log_dirs_to_kwargs(kwargs)
+        kwargs.setdefault('session', self.session)
         return self._request_delete(url, **kwargs)
 
 
