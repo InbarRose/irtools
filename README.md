@@ -3,6 +3,7 @@
 A collection of useful tools for Automation, Devops, or anything really
 
 ## News:
+> Python3 version: https://github.com/InbarRose/kitir
 
 > Now hosted on pypi !
 
